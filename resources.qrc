@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>cl/example.cl</file>
+    </qresource>
+</RCC>

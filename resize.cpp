@@ -1,6 +1,7 @@
 #include "resize.h"
 #include <QImage>
 #include <math.h>
+#include <stdint.h>
 
 namespace {
 
@@ -28,6 +29,20 @@ struct PixelRGBA {
 		: r(r)
 		, g(g)
 		, b(b)
+		, a(a)
+	{
+	}
+};
+
+struct PixelGrayA {
+	uint8_t v, a;
+	PixelGrayA()
+		: v(0)
+		, a(0)
+	{
+	}
+	PixelGrayA(uint8_t v, uint8_t a = 255)
+		: v(v)
 		, a(a)
 	{
 	}
@@ -121,6 +136,69 @@ public:
 	PixelRGBA toPixelRGBA() const
 	{
 		return PixelRGBA(r8(), g8(), b8());
+	}
+};
+
+class FPixelGray {
+public:
+	double v;
+	FPixelGray()
+		: v(0)
+	{
+	}
+	FPixelGray(double v)
+		: v(v)
+	{
+	}
+	FPixelGray(PixelGrayA const &src)
+		: v(src.v)
+	{
+	}
+	FPixelGray operator + (FPixelGray const &right) const
+	{
+		return FPixelGray(v + right.v);
+	}
+	FPixelGray operator * (double t) const
+	{
+		return FPixelGray(v * t);
+	}
+	void operator += (FPixelGray const &o)
+	{
+		v += o.v;
+	}
+	void add(FPixelGray const &p, double v)
+	{
+		v += p.v * v;
+	}
+	void sub(FPixelGray const &p, double v)
+	{
+		v -= p.v * v;
+	}
+
+	void operator *= (double t)
+	{
+		v *= t;
+	}
+	int v8() const
+	{
+		if (v <= 0) return 0;
+		if (v >= 255) return 255;
+		return (int)v;
+	}
+	PixelGrayA color(double amount) const
+	{
+		if (amount == 1) {
+			return PixelGrayA(v8());
+		} else if (amount == 0) {
+			return PixelGrayA(0);
+		}
+		double m = 1 / amount;
+		FPixelGray p = *this * m;
+		return PixelGrayA(p.v8());
+	}
+	PixelGrayA toPixelGrayA() const
+	{
+		return PixelGrayA(v8());
 	}
 };
 
@@ -226,6 +304,85 @@ public:
 		return PixelRGBA(pixel.r8(), pixel.g8(), pixel.b8(), pixel.a8());
 	}
 	PixelRGBA toPixelRGBAa(double amount) const
+	{
+		return color(amount);
+	}
+};
+
+class FPixelGrayA {
+public:
+	double v;
+	double a;
+	FPixelGrayA()
+		: v(0)
+		, a(0)
+	{
+	}
+	FPixelGrayA(double v,  double a = 255)
+		: v(v)
+		, a(a)
+	{
+	}
+	FPixelGrayA(PixelGrayA const &src)
+		: v(src.v)
+		, a(src.a)
+	{
+	}
+	FPixelGrayA operator + (FPixelGrayA const &right) const
+	{
+		return FPixelGrayA(v + right.v);
+	}
+	FPixelGrayA operator * (double t) const
+	{
+		return FPixelGrayA(v * t);
+	}
+	void operator += (FPixelGrayA const &o)
+	{
+		v += o.v;
+	}
+	void operator *= (double t)
+	{
+		v *= t;
+	}
+	void add(FPixelGrayA const &p, double v)
+	{
+		v *= p.a;
+		a += v;
+		v /= 255;
+		v += p.v * v;
+	}
+	void sub(FPixelGrayA const &p, double v)
+	{
+		v *= p.a;
+		a -= v;
+		v /= 255;
+		v -= p.v * v;
+	}
+	int v8() const
+	{
+		if (v <= 0) return 0;
+		if (v >= 255) return 255;
+		return (int)v;
+	}
+	int a8() const
+	{
+		if (a < 0) return 0;
+		if (a > 255) return 255;
+		return (int)a;
+	}
+	PixelGrayA color(double amount) const
+	{
+		if (amount == 0) {
+			return PixelGrayA(0, 0);
+		}
+		FPixelGrayA pixel(*this);
+		pixel *= (255.0f / pixel.a);
+		pixel.a = pixel.a / amount;
+		if (pixel.a < 0) pixel.a = 0;
+		else if (pixel.a > 255) pixel.a = 255;
+		return PixelGrayA(pixel.v8(), pixel.a8());
+	}
+	PixelGrayA toPixelGrayAa(double amount) const
 	{
 		return color(amount);
 	}
@@ -657,7 +814,7 @@ QImage resizeBicubicVT(QImage const &image, int dst_h)
 
 //
 
-template <typename PIXEL> QImage Filter(QImage image, int radius)
+template <typename PIXEL> QImage BlurFilter(QImage image, int radius)
 {
 	int w = image.width();
 	int h = image.height();
@@ -673,17 +830,17 @@ template <typename PIXEL> QImage Filter(QImage image, int radius)
 			shape[radius] = radius;
 		}
 
-		std::vector<PixelRGBA> dst_(w * h);
+		std::vector<PIXEL> dst_(w * h);
 
 		for (int y = 0; y < h; y++) {
 			PIXEL pixel;
 			for (int i = 0; i < radius * 2 + 1; i++) {
 				int y2 = y + i - radius;
 				if (y2 >= 0 && y2 < h) {
-					PixelRGBA const *s = (PixelRGBA const *)image.scanLine(y2);
+					PIXEL const *s = (PIXEL const *)image.scanLine(y2);
 					for (int x = 0; x < shape[i]; x++) {
 						if (x < w) {
-							PixelRGBA pix = s[x];
+							PIXEL pix = s[x];
 							pixel.add(pix, 1);
 						}
 					}
@@ -693,18 +850,18 @@ template <typename PIXEL> QImage Filter(QImage image, int radius)
 				for (int i = 0; i < radius * 2 + 1; i++) {
 					int y2 = y + i - radius;
 					if (y2 >= 0 && y2 < h) {
-						PixelRGBA const *s = (PixelRGBA const *)image.scanLine(y2);
+						PIXEL const *s = (PIXEL const *)image.scanLine(y2);
 						int x2 = x + shape[i];
 						if (x2 < w) {
-							PixelRGBA pix = s[x2];
+							PIXEL pix = s[x2];
 							pixel.add(pix, 1);
 						}
 					}
 				}
 
 				{
-					PixelRGBA const *s = (PixelRGBA const *)image.scanLine(y);
-					PixelRGBA pix = s[x];
+					PIXEL const *s = (PIXEL const *)image.scanLine(y);
+					PIXEL pix = s[x];
 					pix = pixel.color(1);
 					dst_[y * w + x] = pix;
 				}
@@ -712,10 +869,10 @@ template <typename PIXEL> QImage Filter(QImage image, int radius)
 				for (int i = 0; i < radius * 2 + 1; i++) {
 					int y2 = y + i - radius;
 					if (y2 >= 0 && y2 < h) {
-						PixelRGBA const *s = (PixelRGBA const *)image.scanLine(y2);
+						PIXEL const *s = (PIXEL const *)image.scanLine(y2);
 						int x2 = x - shape[i];
 						if (x2 >= 0) {
-							PixelRGBA pix = s[x2];
+							PIXEL pix = s[x2];
 							pixel.sub(pix, 1);
 						}
 					}
@@ -724,9 +881,9 @@ template <typename PIXEL> QImage Filter(QImage image, int radius)
 		}
 
 		for (int y = 0; y < h; y++) {
-			PixelRGBA *s = &dst_[y * w];
-			PixelRGBA *d = (PixelRGBA *)image.scanLine(y);
-			memcpy(d, s, sizeof(PixelRGBA) * w);
+			PIXEL *s = &dst_[y * w];
+			PIXEL *d = (PIXEL *)image.scanLine(y);
+			memcpy(d, s, sizeof(PIXEL) * w);
 		}
 	}
 	return image;
@@ -817,11 +974,9 @@ QImage resizeImage(QImage image, int dst_w, int dst_h, EnlargeMethod method, boo
 
 QImage filter_blur(QImage image, int radius)
 {
+	if (image.format() == QImage::Format_Grayscale8) {
+		return BlurFilter<FPixelGrayA>(image, radius);
+	}
 	image = image.convertToFormat(QImage::Format_RGBA8888);
-	return Filter<FPixelRGBA>(image, radius);
+	return BlurFilter<FPixelRGBA>(image, radius);
 }
-
-
-
-
-

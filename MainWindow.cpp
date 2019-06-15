@@ -16,7 +16,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->widget->setBrushSize(1);
 	ui->widget->setBrushSoftness(0 / 100.0);
 
-	ui->widget_image_view->bind(this, ui->horizontalScrollBar, ui->verticalScrollBar);
+	ui->widget_image_view->bind(this, ui->verticalScrollBar, ui->horizontalScrollBar);
 
 	connect(ui->widget_hue, SIGNAL(hueChanged(int)), this, SLOT(onHueChanged(int)));
 }
@@ -128,3 +128,13 @@ void MainWindow::on_action_filter_antialias_triggered()
 	ui->widget_image_view->setImage(image);
 }
 
+
+void MainWindow::on_horizontalScrollBar_valueChanged(int value)
+{
+	ui->widget_image_view->refrectScrollBar();
+}
+
+void MainWindow::on_verticalScrollBar_valueChanged(int value)
+{
+	ui->widget_image_view->refrectScrollBar();
+}

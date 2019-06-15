@@ -28,6 +28,10 @@ private slots:
 	void on_action_resize_triggered();
 	void on_horizontalSlider_size_valueChanged(int value);
 	void on_horizontalSlider_softness_valueChanged(int value);
+	void on_horizontalScrollBar_valueChanged(int value);
+
+	void on_verticalScrollBar_valueChanged(int value);
+
 private:
 	Ui::MainWindow *ui;
 };

@@ -814,7 +814,7 @@ QImage resizeBicubicVT(QImage const &image, int dst_h)
 
 //
 
-template <typename PIXEL> QImage BlurFilter(QImage image, int radius)
+template <typename PIXEL, typename FPIXEL> QImage BlurFilter(QImage image, int radius)
 {
 	int w = image.width();
 	int h = image.height();
@@ -833,7 +833,7 @@ template <typename PIXEL> QImage BlurFilter(QImage image, int radius)
 		std::vector<PIXEL> dst_(w * h);
 
 		for (int y = 0; y < h; y++) {
-			PIXEL pixel;
+			FPIXEL pixel;
 			for (int i = 0; i < radius * 2 + 1; i++) {
 				int y2 = y + i - radius;
 				if (y2 >= 0 && y2 < h) {
@@ -975,8 +975,8 @@ QImage resizeImage(QImage image, int dst_w, int dst_h, EnlargeMethod method, boo
 QImage filter_blur(QImage image, int radius)
 {
 	if (image.format() == QImage::Format_Grayscale8) {
-		return BlurFilter<FPixelGrayA>(image, radius);
+		return BlurFilter<PixelGrayA, FPixelGrayA>(image, radius);
 	}
 	image = image.convertToFormat(QImage::Format_RGBA8888);
-	return BlurFilter<FPixelRGBA>(image, radius);
+	return BlurFilter<PixelRGBA, FPixelRGBA>(image, radius);
 }

@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 
+class Document;
+
 namespace Ui {
 class MainWindow;
 }
@@ -10,12 +12,19 @@ class MainWindow;
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
-
+private:
+	struct Private;
+	Private *m;
 public:
 	explicit MainWindow(QWidget *parent = 0);
 	~MainWindow();
 
-	void fit();
+	Document *document();
+	Document const *document() const;
+
+	void fitView();
+	QImage renderImage(const QRect &r) const;
+	QRect selectionRect() const;
 private slots:
 	void onHueChanged(int hue);
 	void on_action_file_open_triggered();
@@ -32,8 +41,12 @@ private slots:
 
 	void on_verticalScrollBar_valueChanged(int value);
 
+	void on_action_trim_triggered();
+
 private:
 	Ui::MainWindow *ui;
+	void setImage(const QImage &image, bool fitview);
+	void setImage(QByteArray const &ba);
 };
 
 #endif // MAINWINDOW_H

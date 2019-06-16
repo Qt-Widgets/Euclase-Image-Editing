@@ -20,15 +20,14 @@
 using SvgRendererPtr = std::shared_ptr<QSvgRenderer>;
 
 struct ImageViewWidget::Private {
-	QMainWindow *mainwindow = nullptr;
+	MainWindow *mainwindow = nullptr;
 //	FileDiffWidget *filediffwidget = nullptr;
 //	FileDiffWidget::DrawData *draw_data = nullptr;
 	QScrollBar *v_scroll_bar = nullptr;
 	QScrollBar *h_scroll_bar = nullptr;
 	QString mime_type;
 
-	QImage image;
-	SvgRendererPtr svg;
+//	SvgRendererPtr svg;
 
 	double image_scroll_x = 0;
 	double image_scroll_y = 0;
@@ -68,17 +67,22 @@ ImageViewWidget::~ImageViewWidget()
 	delete m;
 }
 
-void ImageViewWidget::bind(QMainWindow *mainwindow, QScrollBar *vsb, QScrollBar *hsb)
+Document *ImageViewWidget::document()
+{
+	return m->mainwindow->document();
+}
+
+Document const *ImageViewWidget::document() const
+{
+	return m->mainwindow->document();
+}
+
+void ImageViewWidget::bind(MainWindow *mainwindow, QScrollBar *vsb, QScrollBar *hsb)
 {
 	m->mainwindow = mainwindow;
 	m->v_scroll_bar = vsb;
 	m->h_scroll_bar = hsb;
 }
-
-//void ImageViewWidget::setLeftBorderVisible(bool f)
-//{
-//	m->draw_left_border = f;
-//}
 
 void ImageViewWidget::internalScrollImage(double x, double y)
 {
@@ -121,15 +125,12 @@ void ImageViewWidget::refrectScrollBar()
 void ImageViewWidget::clear()
 {
 	m->mime_type = QString();
-	m->image = QImage();
+	document()->image = QImage();
 	setMouseTracking(false);
 	update();
 }
 
-QImage ImageViewWidget::image() const
-{
-	return m->image;
-}
+
 
 QSizeF ImageViewWidget::imageScrollRange() const
 {
@@ -157,32 +158,27 @@ void ImageViewWidget::updateScrollBarRange()
 	setScrollBarRange(m->h_scroll_bar, m->v_scroll_bar);
 }
 
-QMainWindow *ImageViewWidget::mainwindow()
+MainWindow *ImageViewWidget::mainwindow()
 {
 	return m->mainwindow;
 }
 
 QBrush ImageViewWidget::getTransparentBackgroundBrush()
 {
-#ifdef APP_GUITAR
-	return qobject_cast<BasicMainWindow *>(mainwindow())->getTransparentPixmap();
-#else
 	if (m->transparent_pixmap.isNull()) {
 		m->transparent_pixmap = QPixmap(":/image/transparent.png");
 	}
 	return m->transparent_pixmap;
-#endif
 }
 
 bool ImageViewWidget::isValidImage() const
 {
-	return !m->image.isNull() || (m->svg && m->svg->isValid());
+	return !document()->image.isNull();
 }
 
 QSize ImageViewWidget::imageSize() const
 {
-	if (!m->image.isNull()) return m->image.size();
-	if (m->svg && m->svg->isValid()) return m->svg->defaultSize();
+	if (!document()->image.isNull()) return document()->image.size();
 	return QSize();
 }
 
@@ -193,9 +189,6 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 	QSize imagesize = imageSize();
 	if (imagesize.width() > 0 && imagesize.height() > 0) {
 		pr.save();
-//		if (!m->draw_left_border) {
-//			pr.setClipRect(1, 0, width() - 1, height());
-//		}
 		double cx = width() / 2.0;
 		double cy = height() / 2.0;
 		double x = cx - m->image_scroll_x;
@@ -205,37 +198,19 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 			QBrush br = getTransparentBackgroundBrush();
 			pr.setBrushOrigin((int)x, (int)y);
 			pr.fillRect((int)x, (int)y, (int)sz.width(), (int)sz.height(), br);
-			if (!m->image.isNull()) {
-				pr.drawImage(QRect((int)x, (int)y, (int)sz.width(), (int)sz.height()), m->image, QRect(0, 0, imagesize.width(), imagesize.height()));
-			} else if (m->svg && m->svg->isValid()) {
-				m->svg->render(&pr, QRectF(x, y, sz.width(), sz.height()));
+			QImage img = mainwindow()->renderImage(QRect(0, 0, imagesize.width(), imagesize.height()));
+			if (!img.isNull()) {
+				pr.drawImage(QRect((int)x, (int)y, (int)sz.width(), (int)sz.height()), img, img.rect());
 			}
 		}
 		misc::drawFrame(&pr, (int)x - 1, (int)y - 1, (int)sz.width() + 2, (int)sz.height() + 2, Qt::black);
 		pr.restore();
-	}
-
-//	if (m->draw_left_border) {
-//		pr.fillRect(0, 0, 1, height(), QColor(160, 160, 160));
-//	}
-
-	if (0) {
-		if (hasFocus()) {
-			misc::drawFrame(&pr, 0, 0, width(), height(), QColor(0, 128, 255, 128));
-			misc::drawFrame(&pr, 1, 1, width() - 2, height() - 2, QColor(0, 128, 255, 64));
-		}
 	}
 }
 
 void ImageViewWidget::resizeEvent(QResizeEvent *)
 {
 	updateScrollBarRange();
-}
-
-void ImageViewWidget::setImage(QImage const &image)
-{
-	m->image = image.convertToFormat(QImage::Format_RGBA8888);
-	update();
 }
 
 class ImageYUVA64 {
@@ -407,40 +382,8 @@ QImage ImageViewWidget::filter_median__yuva64(QImage srcimage)
 
 void ImageViewWidget::filter_median_rgba8888()
 {
-	m->image = filter_median__yuva64(m->image);
+	document()->image = filter_median__yuva64(document()->image);
 	update();
-}
-
-void ImageViewWidget::setImage(QString mimetype, QByteArray const &ba)
-{
-	if (mimetype.isEmpty()) {
-		mimetype = "image/x-unknown";
-	}
-
-	setMouseTracking(true);
-
-	QImage image;
-	m->svg = SvgRendererPtr();
-	if (!ba.isEmpty()) {
-		if (misc::isSVG(mimetype)) {
-			m->svg = std::make_shared<QSvgRenderer>(ba);
-		} else if (misc::isPSD(mimetype)) {
-			if (!ba.isEmpty()) {
-				MemoryReader reader(ba.data(), ba.size());
-				if (reader.open(QIODevice::ReadOnly)) {
-					std::vector<char> jpeg;
-					photoshop::readThumbnail(&reader, &jpeg);
-					if (!jpeg.empty()) {
-						image.loadFromData((uchar const *)&jpeg[0], jpeg.size());
-					}
-				}
-			}
-		} else {
-			image.loadFromData(ba);
-		}
-	}
-	setImage(image);
-	scaleFit();
 }
 
 void ImageViewWidget::mousePressEvent(QMouseEvent *e)

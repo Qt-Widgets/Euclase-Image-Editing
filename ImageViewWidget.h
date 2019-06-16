@@ -5,11 +5,20 @@
 #include <QWidget>
 #include "MainWindow.h"
 
+class Document {
+public:
+	QPoint offset;
+	QImage image;
+};
+
 class ImageViewWidget : public QWidget {
 	Q_OBJECT
 private:
 	struct Private;
 	Private *m;
+
+	Document *document();
+	Document const *document() const;
 
 	bool isValidImage() const;
 	QSize imageSize() const;
@@ -26,7 +35,7 @@ private:
 	void updateCursorAnchorPos();
 	void updateCenterAnchorPos();
 protected:
-	QMainWindow *mainwindow();
+	MainWindow *mainwindow();
 	void resizeEvent(QResizeEvent *) override;
 	void paintEvent(QPaintEvent *) override;
 	void mousePressEvent(QMouseEvent *event) override;
@@ -36,16 +45,9 @@ public:
 	explicit ImageViewWidget(QWidget *parent = nullptr);
 	~ImageViewWidget() override;
 
-	void bind(QMainWindow *m, QScrollBar *vsb, QScrollBar *hsb);
+	void bind(MainWindow *m, QScrollBar *vsb, QScrollBar *hsb);
 
 	void clear();
-
-	QImage image() const;
-
-	void setImage(QImage const &image);
-	void setImage(QString mimetype, QByteArray const &ba);
-
-//	void setLeftBorderVisible(bool f);
 
 	void refrectScrollBar();
 

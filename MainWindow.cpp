@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "ResizeDialog.h"
+#include "RoundBrushGenerator.h"
 #include "antialias.h"
 #include "median.h"
 #include "resize.h"
@@ -7,6 +8,8 @@
 #include <QFileDialog>
 #include <QPainter>
 #include <stdint.h>
+#include <QKeyEvent>
+#include <QDebug>
 
 struct MainWindow::Private {
 	Document doc;
@@ -49,6 +52,17 @@ Document const *MainWindow::document() const
 void MainWindow::setImage(const QImage &image, bool fitview)
 {
 	document()->image = image.convertToFormat(QImage::Format_RGBA8888);
+	if (1) {
+		int w = document()->image.width();
+		int h = document()->image.height();
+		m->selection = QImage(w, h, QImage::Format_Grayscale8);
+		m->selection.fill(Qt::black);
+		QPainter pr(&m->selection);
+		pr.setRenderHint(QPainter::Antialiasing);
+		pr.setPen(Qt::NoPen);
+		pr.setBrush(Qt::white);
+		pr.drawEllipse(0, 0, w - 1, h - 1);
+	}
 	ui->widget_image_view->update();
 	if (fitview) {
 		fitView();
@@ -62,6 +76,17 @@ void MainWindow::setImage(QByteArray const &ba)
 	setImage(image, true);
 }
 
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+	int k = event->key();
+	if (k == Qt::Key_T) {
+		if (event->modifiers() & Qt::ControlModifier) {
+			test();
+		}
+	}
+
+}
+
 QImage MainWindow::renderImage(QRect const &r) const
 {
 	QImage img;
@@ -71,7 +96,7 @@ QImage MainWindow::renderImage(QRect const &r) const
 		QRect r2 = r.translated(-offset_x, -offset_y);
 		img = document()->image.copy(r2);
 
-#if 0
+#if 1
 		if (!m->selection.isNull()) {
 			QImage sel(r.width(), r.height(), QImage::Format_Grayscale8);
 			sel.fill(Qt::black);
@@ -311,5 +336,60 @@ void MainWindow::on_action_trim_triggered()
 		m->selection = QImage(w, h, QImage::Format_Grayscale8);
 	}
 	setImage(img, true);
+}
+
+void MainWindow::test()
+{
+
+}
+void MainWindow::test(double x, double y)
+{
+	int size = 9;
+	double softness = 1;
+	RoundBrushGenerator brush(size, softness);
+	int w = 100;
+	int h = 100;
+//	double x = 4.5;
+//	double y = 4.5;
+	QImage image(w, h, QImage::Format_Grayscale8);
+	image.fill(Qt::black);
+	for (int i = 0; i < h; i++) {
+		for (int j = 0; j < w; j++) {
+			uint8_t *dst = reinterpret_cast<uint8_t *>(image.scanLine(i));
+			double tx = j + 0.5;
+			double ty = i + 0.5;
+			double value = brush.level(tx - x, ty - y);
+			int v = (int)(value  * 255);
+			dst[j] = v;
+		}
+	}
+	m->selection = image;
+	ui->widget_image_view->update();
+}
+
+void MainWindow::onPenDown(double x, double y)
+{
+	test(x, y);
+}
+
+void MainWindow::onPenStroke(double x, double y)
+{
+	test(x, y);
+}
+
+void MainWindow::onMouseLeftButtonPress(int x, int y)
+{
+	QPointF pos(x + 0.5, y + 0.5);
+	pos = ui->widget_image_view->mapFromViewport(pos);
+	onPenDown(pos.x(), pos.y());
+}
+
+void MainWindow::onMouseMove(int x, int y, bool leftbutton)
+{
+	if (leftbutton) {
+		QPointF pos(x + 0.5, y + 0.5);
+		pos = ui->widget_image_view->mapFromViewport(pos);
+		onPenStroke(pos.x(), pos.y());
+	}
 }
 

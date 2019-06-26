@@ -9,8 +9,7 @@ namespace Ui {
 class MainWindow;
 }
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
 	Q_OBJECT
 private:
 	struct Private;
@@ -25,7 +24,14 @@ public:
 	void fitView();
 	QImage renderImage(const QRect &r) const;
 	QRect selectionRect() const;
+public slots:
+	void onPenDown(double x, double y);
+	void onPenStroke(double x, double y);
+	void onMouseLeftButtonPress(int x, int y);
+	void onMouseMove(int x, int y, bool leftbutton);
 private slots:
+
+
 	void onHueChanged(int hue);
 	void on_action_file_open_triggered();
 	void on_action_file_save_as_triggered();
@@ -35,18 +41,22 @@ private slots:
 	void on_action_filter_median_triggered();
 	void on_action_filter_minimize_triggered();
 	void on_action_resize_triggered();
+	void on_action_trim_triggered();
+	void on_horizontalScrollBar_valueChanged(int value);
 	void on_horizontalSlider_size_valueChanged(int value);
 	void on_horizontalSlider_softness_valueChanged(int value);
-	void on_horizontalScrollBar_valueChanged(int value);
-
 	void on_verticalScrollBar_valueChanged(int value);
-
-	void on_action_trim_triggered();
 
 private:
 	Ui::MainWindow *ui;
 	void setImage(const QImage &image, bool fitview);
 	void setImage(QByteArray const &ba);
+
+	// QWidget interface
+	void test();
+	void test(double x, double y);
+protected:
+	void keyPressEvent(QKeyEvent *event);
 };
 
 #endif // MAINWINDOW_H

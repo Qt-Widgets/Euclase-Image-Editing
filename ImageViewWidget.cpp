@@ -393,6 +393,7 @@ void ImageViewWidget::mousePressEvent(QMouseEvent *e)
 		m->mouse_press_pos = pos;
 		m->scroll_origin_x = m->image_scroll_x;
 		m->scroll_origin_y = m->image_scroll_y;
+		mainwindow()->onMouseLeftButtonPress(pos.x(), pos.y());
 	}
 }
 
@@ -410,9 +411,13 @@ void ImageViewWidget::mouseMoveEvent(QMouseEvent *e)
 	if (isValidImage()) {
 		QPoint pos = mapFromGlobal(QCursor::pos());
 		if ((e->buttons() & Qt::LeftButton) && hasFocus()) {
-			int delta_x = pos.x() - m->mouse_press_pos.x();
-			int delta_y = pos.y() - m->mouse_press_pos.y();
-			scrollImage(m->scroll_origin_x - delta_x, m->scroll_origin_y - delta_y);
+			if (0) {
+				int delta_x = pos.x() - m->mouse_press_pos.x();
+				int delta_y = pos.y() - m->mouse_press_pos.y();
+				scrollImage(m->scroll_origin_x - delta_x, m->scroll_origin_y - delta_y);
+			} else {
+				mainwindow()->onMouseMove(pos.x(), pos.y(), true);
+			}
 		}
 		m->cursor_anchor_pos = mapFromViewport(pos);
 		m->wheel_delta = 0;

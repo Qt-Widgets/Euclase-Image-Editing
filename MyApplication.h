@@ -5,8 +5,7 @@
 
 #include "MiraCL.h"
 
-class MyApplication : public QApplication
-{
+class MyApplication : public QApplication {
 private:
 #if USE_OPENCL
 	MiraCL cl;

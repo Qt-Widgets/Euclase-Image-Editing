@@ -394,7 +394,7 @@ void MainWindow::applyBrush(int x, int y, QImage const &painting, bool update)
 		Pixel *d = reinterpret_cast<Pixel *>(document()->image.scanLine(dy0 + i));
 		for (int j = 0; j < w; j++) {
 			color.a = AlphaBlend::div255(opacity * s[x + j]);
-			d[dx0 + j] = AlphaBlend::blend(d[dx0 + j], color);
+			d[dx0 + j] = AlphaBlend::blend_with_gamma_collection(d[dx0 + j], color);
 		}
 	}
 

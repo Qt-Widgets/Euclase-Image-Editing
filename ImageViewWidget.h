@@ -40,6 +40,7 @@ protected:
 	void paintEvent(QPaintEvent *) override;
 	void mousePressEvent(QMouseEvent *event) override;
 	void mouseMoveEvent(QMouseEvent *event) override;
+	void mouseReleaseEvent(QMouseEvent *e);
 	void wheelEvent(QWheelEvent *) override;
 public:
 	explicit ImageViewWidget(QWidget *parent = nullptr);
@@ -61,6 +62,9 @@ public:
 	static QImage filter_median__yuva64(QImage srcimage);
 signals:
 	void scrollByWheel(int lines);
+
+	// QWidget interface
+protected:
 };
 
 #endif // IMAGEVIEWWIDGET_H

@@ -1,3 +1,4 @@
+#include "AlphaBlend.h"
 #include "MainWindow.h"
 #include "ResizeDialog.h"
 #include "RoundBrushGenerator.h"
@@ -14,6 +15,7 @@
 struct MainWindow::Private {
 	Document doc;
 	QImage selection;
+	QImage painting;
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -55,13 +57,15 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 	if (1) {
 		int w = document()->image.width();
 		int h = document()->image.height();
-		m->selection = QImage(w, h, QImage::Format_Grayscale8);
-		m->selection.fill(Qt::black);
-		QPainter pr(&m->selection);
-		pr.setRenderHint(QPainter::Antialiasing);
-		pr.setPen(Qt::NoPen);
-		pr.setBrush(Qt::white);
-		pr.drawEllipse(0, 0, w - 1, h - 1);
+		m->painting = QImage(w, h, QImage::Format_Grayscale8);
+		m->painting.fill(Qt::black);
+//		m->selection = QImage(w, h, QImage::Format_Grayscale8);
+//		m->selection.fill(Qt::black);
+//		QPainter pr(&m->selection);
+//		pr.setRenderHint(QPainter::Antialiasing);
+//		pr.setPen(Qt::NoPen);
+//		pr.setBrush(Qt::white);
+//		pr.drawEllipse(0, 0, w - 1, h - 1);
 	}
 	ui->widget_image_view->update();
 	if (fitview) {
@@ -74,17 +78,6 @@ void MainWindow::setImage(QByteArray const &ba)
 	QImage image;
 	image.loadFromData(ba);
 	setImage(image, true);
-}
-
-void MainWindow::keyPressEvent(QKeyEvent *event)
-{
-	int k = event->key();
-	if (k == Qt::Key_T) {
-		if (event->modifiers() & Qt::ControlModifier) {
-			test();
-		}
-	}
-
 }
 
 QImage MainWindow::renderImage(QRect const &r) const
@@ -143,12 +136,9 @@ QImage MainWindow::renderImage(QRect const &r) const
 				pr2.drawImage(QRect(dx0, dy0, w, h), m->selection, QRect(sx0, sy0, w, h));
 			}
 			{
-				struct Pixel {
-					uint8_t r;
-					uint8_t g;
-					uint8_t b;
-					uint8_t a;
-				};
+				using Pixel = AlphaBlend::RGBA8888;
+				AlphaBlend::RGBA8888 color(255, 0, 0, 128);
+				int opacity = color.a;
 
 				int w = r.width();
 				int h = r.height();
@@ -156,10 +146,8 @@ QImage MainWindow::renderImage(QRect const &r) const
 					uint8_t const *s = sel.scanLine(y);
 					Pixel *d = (Pixel *)img.scanLine(y);
 					for (int x = 0; x < w; x++) {
-						int a = s[x];
-						int r = d[x].r;
-						int r2 = r / 4 + 192;
-						d[x].r = (r * a + r2 * (255 - a)) / 255;
+						color.a = AlphaBlend::div255((255 - s[x]) * opacity);
+						d[x] = AlphaBlend::blend(d[x], color);
 					}
 				}
 			}
@@ -212,10 +200,10 @@ void MainWindow::on_action_resize_triggered()
 	}
 }
 
-void MainWindow::on_action_file_open_triggered()
+void MainWindow::openFile(QString const &path)
 {
 	QByteArray ba;
-	QString path = QFileDialog::getOpenFileName(this);
+
 	QFile file(path);
 	if (file.open(QFile::ReadOnly)) {
 		ba = file.readAll();
@@ -223,6 +211,12 @@ void MainWindow::on_action_file_open_triggered()
 	setImage(ba);
 
 	fitView();
+}
+
+void MainWindow::on_action_file_open_triggered()
+{
+	QString path = QFileDialog::getOpenFileName(this);
+	openFile(path);
 }
 
 void MainWindow::on_action_file_save_as_triggered()
@@ -338,33 +332,36 @@ void MainWindow::on_action_trim_triggered()
 	setImage(img, true);
 }
 
-void MainWindow::test()
-{
-
-}
 void MainWindow::test(double x, double y)
 {
-	int size = 9;
-	double softness = 1;
+	int size = 85;
+	double softness = 1.0;
 	RoundBrushGenerator brush(size, softness);
-	int w = 100;
-	int h = 100;
-//	double x = 4.5;
-//	double y = 4.5;
+	int x0 = floor(x - size / 2.0);
+	int y0 = floor(y - size / 2.0);
+	int x1 = ceil(x + size / 2.0);
+	int y1 = ceil(y + size / 2.0);
+	int w = x1 - x0;
+	int h = y1 - y0;
 	QImage image(w, h, QImage::Format_Grayscale8);
 	image.fill(Qt::black);
 	for (int i = 0; i < h; i++) {
 		for (int j = 0; j < w; j++) {
 			uint8_t *dst = reinterpret_cast<uint8_t *>(image.scanLine(i));
-			double tx = j + 0.5;
-			double ty = i + 0.5;
-			double value = brush.level(tx - x, ty - y);
+			double tx = x0 + j - x + 0.5;
+			double ty = y0 + i - y + 0.5;
+			double value = brush.level(tx, ty);
 			int v = (int)(value  * 255);
 			dst[j] = v;
 		}
 	}
-	m->selection = image;
-	ui->widget_image_view->update();
+	{
+		m->painting.fill(Qt::black);
+		QPainter pr(&m->painting);
+		pr.drawImage(x0, y0, image);
+	}
+	applyBrush(true);
+//	ui->widget_image_view->update();
 }
 
 void MainWindow::onPenDown(double x, double y)
@@ -376,6 +373,35 @@ void MainWindow::onPenStroke(double x, double y)
 {
 	test(x, y);
 }
+
+void MainWindow::applyBrush(bool update)
+{
+	int w = document()->image.width();
+	int h = document()->image.height();
+	if (w != m->painting.width()) return;
+	if (h != m->painting.height()) return;
+	{
+		AlphaBlend::RGBA8888 color(255, 255, 255, 128);
+		int opacity = color.a;
+		for (int i = 0; i < h; i++) {
+			using Pixel = AlphaBlend::RGBA8888;
+			Pixel *d = reinterpret_cast<Pixel *>(document()->image.scanLine(i));
+			uint8_t const *s = reinterpret_cast<uint8_t *>(m->painting.scanLine(i));
+			for (int j = 0; j < w; j++) {
+				color.a = AlphaBlend::div255(opacity * s[j]);
+				d[j] = AlphaBlend::blend(d[j], color);
+			}
+		}
+	}
+	if (update) {
+		ui->widget_image_view->update();
+	}
+}
+
+void MainWindow::onPenUp(double x, double y)
+{
+}
+
 
 void MainWindow::onMouseLeftButtonPress(int x, int y)
 {
@@ -393,3 +419,27 @@ void MainWindow::onMouseMove(int x, int y, bool leftbutton)
 	}
 }
 
+void MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
+{
+	if (leftbutton) {
+		QPointF pos(x + 0.5, y + 0.5);
+		pos = ui->widget_image_view->mapFromViewport(pos);
+		onPenUp(pos.x(), pos.y());
+	}
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+	int k = event->key();
+	if (k == Qt::Key_T) {
+		if (event->modifiers() & Qt::ControlModifier) {
+			test();
+		}
+	}
+
+}
+
+void MainWindow::test()
+{
+	openFile("../lena_std.png");
+}

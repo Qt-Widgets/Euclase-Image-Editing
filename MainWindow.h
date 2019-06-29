@@ -24,11 +24,14 @@ public:
 	void fitView();
 	QImage renderImage(const QRect &r) const;
 	QRect selectionRect() const;
+	void openFile(const QString &path);
 public slots:
 	void onPenDown(double x, double y);
 	void onPenStroke(double x, double y);
+	void onPenUp(double x, double y);
 	void onMouseLeftButtonPress(int x, int y);
 	void onMouseMove(int x, int y, bool leftbutton);
+	void onMouseLeftButtonRelase(int x, int y, bool leftbutton);
 private slots:
 
 
@@ -55,6 +58,7 @@ private:
 	// QWidget interface
 	void test();
 	void test(double x, double y);
+	void applyBrush(bool update);
 protected:
 	void keyPressEvent(QKeyEvent *event);
 };

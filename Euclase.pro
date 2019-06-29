@@ -5,10 +5,13 @@ TARGET = Euclase
 TEMPLATE = app
 CONFIG += c++11
 
+DESTDIR = $$PWD/_bin
+
 #INCLUDEPATH += "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v7.5/include"
 #LIBS += "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v7.5/lib/Win32/OpenCL.lib"
 
 SOURCES += main.cpp\
+	AlphaBlend.cpp \
         MainWindow.cpp \
     BrushPreviewWidget.cpp \
     MiraCL.cpp \
@@ -29,6 +32,7 @@ SOURCES += main.cpp\
 	resize.cpp
 
 HEADERS  += MainWindow.h \
+    AlphaBlend.h \
     BrushPreviewWidget.h \
     MiraCL.h \
     MyWidget.h \

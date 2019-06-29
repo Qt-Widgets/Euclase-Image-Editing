@@ -42,6 +42,8 @@ struct ImageViewWidget::Private {
 	int bottom_margin = 1;
 //	bool draw_left_border = true;
 
+	bool left_button = false;
+
 #ifndef APP_GUITAR
 	QPixmap transparent_pixmap;
 #endif
@@ -388,7 +390,8 @@ void ImageViewWidget::filter_median_rgba8888()
 
 void ImageViewWidget::mousePressEvent(QMouseEvent *e)
 {
-	if (e->button() == Qt::LeftButton) {
+	m->left_button = (e->buttons() & Qt::LeftButton);
+	if (m->left_button) {
 		QPoint pos = mapFromGlobal(QCursor::pos());
 		m->mouse_press_pos = pos;
 		m->scroll_origin_x = m->image_scroll_x;
@@ -410,7 +413,7 @@ void ImageViewWidget::mouseMoveEvent(QMouseEvent *e)
 {
 	if (isValidImage()) {
 		QPoint pos = mapFromGlobal(QCursor::pos());
-		if ((e->buttons() & Qt::LeftButton) && hasFocus()) {
+		if (m->left_button && hasFocus()) {
 			if (0) {
 				int delta_x = pos.x() - m->mouse_press_pos.x();
 				int delta_y = pos.y() - m->mouse_press_pos.y();
@@ -422,6 +425,17 @@ void ImageViewWidget::mouseMoveEvent(QMouseEvent *e)
 		m->cursor_anchor_pos = mapFromViewport(pos);
 		m->wheel_delta = 0;
 	}
+}
+
+void ImageViewWidget::mouseReleaseEvent(QMouseEvent *e)
+{
+	if (isValidImage()) {
+		QPoint pos = mapFromGlobal(QCursor::pos());
+		if (m->left_button && hasFocus()) {
+			mainwindow()->onMouseLeftButtonRelase(pos.x(), pos.y(), true);
+		}
+	}
+	m->left_button = false;
 }
 
 void ImageViewWidget::setImageScale(double scale)

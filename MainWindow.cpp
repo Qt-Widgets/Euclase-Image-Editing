@@ -16,6 +16,7 @@ struct MainWindow::Private {
 	Document doc;
 	QImage selection;
 	QImage painting;
+	QColor foreground_color;
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -33,6 +34,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 	connect(ui->widget_hue, SIGNAL(hueChanged(int)), this, SLOT(onHueChanged(int)));
 
+	setForegroundColor(Qt::red);
 }
 
 MainWindow::~MainWindow()
@@ -51,12 +53,34 @@ Document const *MainWindow::document() const
 	return &m->doc;
 }
 
+int MainWindow::documentWidth() const
+{
+	auto const *d = document();
+	return d ? d->width() : 0;
+}
+
+int MainWindow::documentHeight() const
+{
+	auto const *d = document();
+	return d ? d->height() : 0;
+}
+
+void MainWindow::setForegroundColor(const QColor &color)
+{
+	m->foreground_color = color;
+}
+
+QColor MainWindow::foregroundColor() const
+{
+	return m->foreground_color;
+}
+
 void MainWindow::setImage(const QImage &image, bool fitview)
 {
 	document()->image = image.convertToFormat(QImage::Format_RGBA8888);
 	if (1) {
-		int w = document()->image.width();
-		int h = document()->image.height();
+		int w = documentWidth();
+		int h = documentHeight();
 		m->painting = QImage(w, h, QImage::Format_Grayscale8);
 		m->painting.fill(Qt::black);
 //		m->selection = QImage(w, h, QImage::Format_Grayscale8);
@@ -179,7 +203,7 @@ void MainWindow::on_horizontalSlider_softness_valueChanged(int value)
 
 void MainWindow::onHueChanged(int hue)
 {
-	ui->widget_sb->setHue(hue);
+	ui->widget_color->setHue(hue);
 }
 
 void MainWindow::on_action_resize_triggered()
@@ -332,6 +356,53 @@ void MainWindow::on_action_trim_triggered()
 	setImage(img, true);
 }
 
+void MainWindow::applyBrush(int x, int y, QImage const &painting, bool update)
+{
+	int w = documentWidth();
+	int h = documentHeight();
+
+	int dx0 = 0;
+	int dy0 = 0;
+	int dx1 = w;
+	int dy1 = h;
+	int sx0 = x;
+	int sy0 = y;
+	int sx1 = x + painting.width();
+	int sy1 = y + painting.height();
+
+	if (dx0 > sx0) { sx0 = dx0; } else { dx0 = sx0; }
+	if (dx1 < sx1) { sx1 = dx1; } else { dx1 = sx1; }
+	if (dy0 > sy0) { sy0 = dy0; } else { dy0 = sy0; }
+	if (dy1 < sy1) { sy1 = dy1; } else { dy1 = sy1; }
+
+	x = sx0 - x;
+	y = sy0 - y;
+	w = sx1 - sx0;
+	h = sy1 - sy0;
+
+	int opacity = 128;
+
+	AlphaBlend::RGBA8888 color;
+	{
+		QColor c = foregroundColor();
+		color = AlphaBlend::RGBA8888(c.red(), c.green(), c.blue());
+	}
+
+	for (int i = 0; i < h; i++) {
+		using Pixel = AlphaBlend::RGBA8888;
+		uint8_t const *s = reinterpret_cast<uint8_t const *>(painting.scanLine(y + i));
+		Pixel *d = reinterpret_cast<Pixel *>(document()->image.scanLine(dy0 + i));
+		for (int j = 0; j < w; j++) {
+			color.a = AlphaBlend::div255(opacity * s[x + j]);
+			d[dx0 + j] = AlphaBlend::blend(d[dx0 + j], color);
+		}
+	}
+
+	if (update) {
+		ui->widget_image_view->update();
+	}
+}
+
 void MainWindow::test(double x, double y)
 {
 	int size = 85;
@@ -360,7 +431,8 @@ void MainWindow::test(double x, double y)
 		QPainter pr(&m->painting);
 		pr.drawImage(x0, y0, image);
 	}
-	applyBrush(true);
+//	applyBrush(0, 0, m->painting, true);
+	applyBrush(x0, y0, image, true);
 //	ui->widget_image_view->update();
 }
 
@@ -372,30 +444,6 @@ void MainWindow::onPenDown(double x, double y)
 void MainWindow::onPenStroke(double x, double y)
 {
 	test(x, y);
-}
-
-void MainWindow::applyBrush(bool update)
-{
-	int w = document()->image.width();
-	int h = document()->image.height();
-	if (w != m->painting.width()) return;
-	if (h != m->painting.height()) return;
-	{
-		AlphaBlend::RGBA8888 color(255, 255, 255, 128);
-		int opacity = color.a;
-		for (int i = 0; i < h; i++) {
-			using Pixel = AlphaBlend::RGBA8888;
-			Pixel *d = reinterpret_cast<Pixel *>(document()->image.scanLine(i));
-			uint8_t const *s = reinterpret_cast<uint8_t *>(m->painting.scanLine(i));
-			for (int j = 0; j < w; j++) {
-				color.a = AlphaBlend::div255(opacity * s[j]);
-				d[j] = AlphaBlend::blend(d[j], color);
-			}
-		}
-	}
-	if (update) {
-		ui->widget_image_view->update();
-	}
 }
 
 void MainWindow::onPenUp(double x, double y)

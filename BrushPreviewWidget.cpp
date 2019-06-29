@@ -8,6 +8,11 @@
 #include <math.h>
 #include "RoundBrushGenerator.h"
 
+MainWindow *BrushPreviewWidget::mainwindow()
+{
+	return qobject_cast<MainWindow *>(window());
+}
+
 BrushPreviewWidget::BrushPreviewWidget(QWidget *parent)
 	: QWidget(parent)
 {

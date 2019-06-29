@@ -1,12 +1,12 @@
 #ifndef BRUSHPREVIEWWIDGET_H
 #define BRUSHPREVIEWWIDGET_H
 
+#include "MainWindow.h"
 #include "MiraCL.h"
 
 #include <QWidget>
 
-class BrushPreviewWidget : public QWidget
-{
+class BrushPreviewWidget : public QWidget {
 	Q_OBJECT
 private:
 	double size = 200;
@@ -15,6 +15,7 @@ private:
 	MiraCL *getCL();
 	MiraCL::Program prog;
 #endif
+	MainWindow *mainwindow();
 public:
 	explicit BrushPreviewWidget(QWidget *parent = 0);
 

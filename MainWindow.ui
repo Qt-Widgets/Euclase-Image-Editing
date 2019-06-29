@@ -92,7 +92,7 @@
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
-            <widget class="SaturationBrightnessWidget" name="widget_sb" native="true"/>
+            <widget class="SaturationBrightnessWidget" name="widget_color" native="true"/>
             <widget class="HueWidget" name="widget_hue" native="true"/>
            </widget>
           </item>

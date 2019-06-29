@@ -5,8 +5,9 @@
 #include <QPixmap>
 #include "MiraCL.h"
 
-class SaturationBrightnessWidget : public QWidget
-{
+class MainWindow;
+
+class SaturationBrightnessWidget : public QWidget {
 	Q_OBJECT
 private:
 #if USE_OPENCL
@@ -15,8 +16,10 @@ private:
 #endif
 	int hue = 0;
 	QPixmap pixmap;
+	MainWindow *mainwindow();
 	void updatePixmap(bool force);
 	QPixmap createPixmap(int w, int h);
+	void changeColor(const QColor &color);
 public:
 	explicit SaturationBrightnessWidget(QWidget *parent = 0);
 

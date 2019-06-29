@@ -9,6 +9,14 @@ class Document {
 public:
 	QPoint offset;
 	QImage image;
+	int width() const
+	{
+		return image.width();
+	}
+	int height() const
+	{
+		return image.height();
+	}
 };
 
 class ImageViewWidget : public QWidget {

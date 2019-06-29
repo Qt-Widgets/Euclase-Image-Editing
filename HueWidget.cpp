@@ -1,4 +1,5 @@
 #include "HueWidget.h"
+#include "MainWindow.h"
 
 #include <QDebug>
 #include <QMouseEvent>
@@ -47,6 +48,11 @@ void HueWidget::paintEvent(QPaintEvent *)
 			pr.fillRect(w - 5, y, 5, 1, Qt::black);
 		}
 	}
+}
+
+MainWindow *HueWidget::mainwindow()
+{
+	return qobject_cast<MainWindow *>(window());
 }
 
 void HueWidget::emit_hueChanged_()

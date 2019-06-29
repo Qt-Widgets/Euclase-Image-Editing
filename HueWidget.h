@@ -3,8 +3,9 @@
 
 #include <QWidget>
 
-class HueWidget : public QWidget
-{
+class MainWindow;
+
+class HueWidget : public QWidget {
 	Q_OBJECT
 private:
 	int hue;
@@ -12,6 +13,9 @@ private:
 	int press_pos;
 	QImage image;
 	QPixmap pixmap;
+
+	MainWindow *mainwindow();
+
 	void emit_hueChanged_();
 public:
 	explicit HueWidget(QWidget *parent = 0);

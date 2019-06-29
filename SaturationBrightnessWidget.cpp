@@ -1,5 +1,6 @@
 #include "SaturationBrightnessWidget.h"
 #include "MyApplication.h"
+#include "MainWindow.h"
 #include <QDebug>
 #include <QFile>
 #include <QPainter>
@@ -76,6 +77,11 @@ QPixmap SaturationBrightnessWidget::createPixmap(int w, int h)
 	return QPixmap::fromImage(image);
 }
 
+MainWindow *SaturationBrightnessWidget::mainwindow()
+{
+	return qobject_cast<MainWindow *>(window());
+}
+
 void SaturationBrightnessWidget::updatePixmap(bool force)
 {
 	int w = width();
@@ -99,6 +105,11 @@ void SaturationBrightnessWidget::paintEvent(QPaintEvent *)
 	}
 }
 
+void SaturationBrightnessWidget::changeColor(QColor const &color)
+{
+	mainwindow()->setForegroundColor(color);
+}
+
 void SaturationBrightnessWidget::setHue(int h)
 {
 	if (h < 0) {
@@ -108,6 +119,7 @@ void SaturationBrightnessWidget::setHue(int h)
 	}
 	hue = h;
 	updatePixmap(true);
+	changeColor(QColor::fromHsv(h, 255, 255));
 	update();
 }
 

@@ -25,7 +25,11 @@ public:
 	QImage renderImage(const QRect &r) const;
 	QRect selectionRect() const;
 	void openFile(const QString &path);
+	int documentWidth() const;
+	int documentHeight() const;
 public slots:
+	void setForegroundColor(QColor const &color);
+	QColor foregroundColor() const;
 	void onPenDown(double x, double y);
 	void onPenStroke(double x, double y);
 	void onPenUp(double x, double y);
@@ -33,8 +37,6 @@ public slots:
 	void onMouseMove(int x, int y, bool leftbutton);
 	void onMouseLeftButtonRelase(int x, int y, bool leftbutton);
 private slots:
-
-
 	void onHueChanged(int hue);
 	void on_action_file_open_triggered();
 	void on_action_file_save_as_triggered();
@@ -58,7 +60,7 @@ private:
 	// QWidget interface
 	void test();
 	void test(double x, double y);
-	void applyBrush(bool update);
+	void applyBrush(int x, int y, const QImage &painting, bool update);
 protected:
 	void keyPressEvent(QKeyEvent *event);
 };

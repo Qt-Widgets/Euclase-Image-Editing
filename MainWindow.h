@@ -1,9 +1,10 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "Document.h"
+
 #include <QMainWindow>
 
-class Document;
 
 namespace Ui {
 class MainWindow;
@@ -58,9 +59,9 @@ private:
 	void setImage(QByteArray const &ba);
 
 	// QWidget interface
-	void test();
-	void test(double x, double y);
-	void applyBrush(int x, int y, const QImage &painting, bool update);
+	void drawBrush();
+	void drawBrush(double x, double y);
+	void applyBrush(const Document::Layer &layer, bool update);
 protected:
 	void keyPressEvent(QKeyEvent *event);
 };

@@ -19,6 +19,15 @@ public:
 		}
 	};
 
+	struct YA88 {
+		uint8_t y, g, b, a;
+		YA88(uint8_t y = 0, uint8_t a = 255)
+			: y(y)
+			, a(a)
+		{
+		}
+	};
+
 	struct FloatRGBA {
 		float r, g, b, a;
 		FloatRGBA(float r = 0, float g = 0, float b = 0, float a = 1)
@@ -29,10 +38,10 @@ public:
 		{
 		}
 		FloatRGBA(RGBA8888 const &t)
-			: r(t.r / 255.0)
-			, g(t.g / 255.0)
-			, b(t.b / 255.0)
-			, a(t.a / 255.0)
+			: r(float(t.r / 255.0))
+			, g(float(t.g / 255.0))
+			, b(float(t.b / 255.0))
+			, a(float(t.a / 255.0))
 		{
 		}
 		operator RGBA8888 () const
@@ -40,6 +49,11 @@ public:
 			return RGBA8888((uint8_t)floor(r * 255 + 0.5), (uint8_t)floor(g * 255 + 0.5), (uint8_t)floor(b * 255 + 0.5), (uint8_t)floor(a * 255 + 0.5));
 		}
 	};
+
+	static inline int gray(int r, int g, int b)
+	{
+		return (306 * r + 601 * g + 117 * b) / 1024;
+	}
 
 	static inline int div255(int v)
 	{
@@ -88,7 +102,7 @@ public:
 		}
 		explicit operator float () const
 		{
-			return value / 4096.0;
+			return float(value / 4096.0);
 		}
 		static fixed_t value0()
 		{
@@ -133,6 +147,15 @@ public:
 		return RGBA8888(r / a, g / a, b / a, div255(a));
 	}
 
+	static inline YA88 blend(YA88 const &base, YA88 const &over)
+	{
+		if (over.a == 0) return base;
+		if (base.a == 0 || over.a == 255) return over;
+		int y = over.y * over.a * 255 + base.y * base.a * (255 - over.a);
+		int a = over.a * 255 + base.a * (255 - over.a);
+		return YA88(y / a, div255(a));
+	}
+
 	static inline FloatRGBA blend(FloatRGBA const &base, FloatRGBA const &over)
 	{
 		if (over.a <= 0) return base;
@@ -148,20 +171,20 @@ public:
 	{
 //		using T = FloatRGBA;
 		using T = FixedRGBA;
-		const double GAMMA = 2.0;
+		const float GAMMA = 2.0;
 		auto Pre = [&](int t){
-			double v = t / 255.0;
+			float v = t / 255.0f;
 			v = pow(v, GAMMA);
 			return (float)v;
 		};
 		auto Post = [&](float v){
-			v = pow((double)v, 1 / GAMMA);
+			v = pow(v, float(1 / GAMMA));
 			return (uint8_t)floor(v * 255 + 0.5);
 		};
-		T fbase(Pre(base.r), Pre(base.g), Pre(base.b), base.a / 255.0);
-		T fover(Pre(over.r), Pre(over.g), Pre(over.b), over.a / 255.0);
+		T fbase(Pre(base.r), Pre(base.g), Pre(base.b), float(base.a / 255.0));
+		T fover(Pre(over.r), Pre(over.g), Pre(over.b), float(over.a / 255.0));
 		T fblend = blend(fbase, fover);
-		return RGBA8888(Post((float)fblend.r), Post((float)fblend.g), Post((float)fblend.b), (uint8_t)floor((float)fblend.a * 255 + 0.5));
+		return RGBA8888(Post(float(fblend.r)), Post(float(fblend.g)), Post(float(fblend.b)), (uint8_t)floor((float)fblend.a * 255 + 0.5));
 	}
 };
 

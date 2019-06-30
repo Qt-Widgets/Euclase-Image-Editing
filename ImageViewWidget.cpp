@@ -1,5 +1,6 @@
 
 #include "ImageViewWidget.h"
+#include "Document.h"
 #include "MainWindow.h"
 #include "MemoryReader.h"
 #include "Photoshop.h"
@@ -127,7 +128,7 @@ void ImageViewWidget::refrectScrollBar()
 void ImageViewWidget::clear()
 {
 	m->mime_type = QString();
-	document()->image = QImage();
+	document()->current_layer()->image = QImage();
 	setMouseTracking(false);
 	update();
 }
@@ -175,12 +176,14 @@ QBrush ImageViewWidget::getTransparentBackgroundBrush()
 
 bool ImageViewWidget::isValidImage() const
 {
-	return !document()->image.isNull();
+	return !document()->current_layer()->image.isNull();
 }
 
 QSize ImageViewWidget::imageSize() const
 {
-	if (!document()->image.isNull()) return document()->image.size();
+	if (!document()->current_layer()->image.isNull()) {
+		return document()->current_layer()->image.size();
+	}
 	return QSize();
 }
 
@@ -346,7 +349,7 @@ QImage ImageViewWidget::filter_median_rgba8888(QImage srcimage)
 
 }
 
-QImage ImageViewWidget::filter_median__yuva64(QImage srcimage)
+QImage ImageViewWidget::filter_median_yuva64(QImage srcimage)
 {
 	srcimage = srcimage.convertToFormat(QImage::Format_RGBA8888);
 	ImageYUVA64 srcimage2 = ImageYUVA64::fromImage(srcimage);
@@ -384,7 +387,7 @@ QImage ImageViewWidget::filter_median__yuva64(QImage srcimage)
 
 void ImageViewWidget::filter_median_rgba8888()
 {
-	document()->image = filter_median__yuva64(document()->image);
+	document()->current_layer()->image = filter_median_yuva64(document()->current_layer()->image);
 	update();
 }
 

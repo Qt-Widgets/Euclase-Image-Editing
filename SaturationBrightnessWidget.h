@@ -14,23 +14,21 @@ private:
 	MiraCL *getCL();
 	MiraCL::Program prog;
 #endif
-	int hue = 0;
-	QPixmap pixmap;
+	struct Private;
+	Private *m;
 	MainWindow *mainwindow();
 	void updatePixmap(bool force);
-	QPixmap createPixmap(int w, int h);
+	QImage createPixmap(int w, int h);
 	void changeColor(const QColor &color);
-public:
-	explicit SaturationBrightnessWidget(QWidget *parent = 0);
-
-	void setHue(int h);
-signals:
-
-public slots:
-
-	// QWidget interface
+	void press(const QPoint &pos);
 protected:
 	void paintEvent(QPaintEvent *);
+	void mousePressEvent(QMouseEvent *event);
+	void mouseMoveEvent(QMouseEvent *event);
+public:
+	explicit SaturationBrightnessWidget(QWidget *parent = 0);
+	~SaturationBrightnessWidget();
+	void setHue(int h);
 };
 
 #endif // SATURATIONBRIGHTNESSWIDGET_H

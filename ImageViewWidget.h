@@ -5,19 +5,7 @@
 #include <QWidget>
 #include "MainWindow.h"
 
-class Document {
-public:
-	QPoint offset;
-	QImage image;
-	int width() const
-	{
-		return image.width();
-	}
-	int height() const
-	{
-		return image.height();
-	}
-};
+class Document;
 
 class ImageViewWidget : public QWidget {
 	Q_OBJECT
@@ -67,7 +55,7 @@ public:
 	void zoomIn();
 	void zoomOut();
 	static QImage filter_median_rgba8888(QImage srcimage);
-	static QImage filter_median__yuva64(QImage srcimage);
+	static QImage filter_median_yuva64(QImage srcimage);
 signals:
 	void scrollByWheel(int lines);
 

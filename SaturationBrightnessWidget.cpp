@@ -5,9 +5,17 @@
 #include <QFile>
 #include <QPainter>
 #include <stdint.h>
+#include <QMouseEvent>
+
+struct SaturationBrightnessWidget::Private {
+	int hue = 0;
+	QImage pixmap;
+	QRect rect;
+};
 
 SaturationBrightnessWidget::SaturationBrightnessWidget(QWidget *parent)
 	: QWidget(parent)
+	, m(new Private)
 {
 	QString path = ":/cl/example.cl";
 	std::string source;
@@ -22,6 +30,11 @@ SaturationBrightnessWidget::SaturationBrightnessWidget(QWidget *parent)
 #if USE_OPENCL
 	prog.build(getCL(), source, "saturation_brightness");
 #endif
+}
+
+SaturationBrightnessWidget::~SaturationBrightnessWidget()
+{
+	delete m;
 }
 
 static void drawFrame(QPainter *pr, int x, int y, int w, int h)
@@ -43,7 +56,7 @@ MiraCL *SaturationBrightnessWidget::getCL()
 }
 #endif
 
-QPixmap SaturationBrightnessWidget::createPixmap(int w, int h)
+QImage SaturationBrightnessWidget::createPixmap(int w, int h)
 {
 	QImage image(w, h, QImage::Format_RGB32);
 #if USE_OPENCL
@@ -69,12 +82,12 @@ QPixmap SaturationBrightnessWidget::createPixmap(int w, int h)
 		QRgb *dst = (QRgb *)image.scanLine(y);
 		for (int x = 0; x < w; x++) {
 			int sat = 256 * x / w;
-			QColor color = QColor::fromHsv(hue, sat, bri);
+			QColor color = QColor::fromHsv(m->hue, sat, bri);
 			dst[x] = qRgb(color.red(), color.green(), color.blue());
 		}
 	}
 #endif
-	return QPixmap::fromImage(image);
+	return image;
 }
 
 MainWindow *SaturationBrightnessWidget::mainwindow()
@@ -87,22 +100,43 @@ void SaturationBrightnessWidget::updatePixmap(bool force)
 	int w = width();
 	int h = height();
 	if (w > 1 && h > 1) {
-		if ((pixmap.width() != w || pixmap.height() != h) || force) {
-			pixmap = createPixmap(w, h);
+		if ((m->pixmap.width() != w || m->pixmap.height() != h) || force) {
+			m->pixmap = createPixmap(w, h);
+			m->rect = QRect(0, 0, w, h);
 		}
 	} else {
-		pixmap = QPixmap();
+		m->pixmap = QImage();
 	}
 }
 
 void SaturationBrightnessWidget::paintEvent(QPaintEvent *)
 {
 	updatePixmap(false);
-	if (!pixmap.isNull()) {
+	if (!m->pixmap.isNull()) {
 		QPainter pr(this);
-		pr.drawPixmap(0, 0, pixmap);
+		pr.drawImage(0, 0, m->pixmap);
 		drawFrame(&pr, 0, 0, width(), height());
 	}
+}
+
+void SaturationBrightnessWidget::press(QPoint const &pos)
+{
+	int x = pos.x() - m->rect.x();
+	int y = pos.y() - m->rect.y();
+	if (x >= 0 && x < m->pixmap.width() && y >= 0 && y < m->pixmap.height()) {
+		QColor color = m->pixmap.pixelColor(QPoint(x, y));
+		mainwindow()->setForegroundColor(color);
+	}
+}
+
+void SaturationBrightnessWidget::mousePressEvent(QMouseEvent *event)
+{
+	press(event->pos());
+}
+
+void SaturationBrightnessWidget::mouseMoveEvent(QMouseEvent *event)
+{
+	press(event->pos());
 }
 
 void SaturationBrightnessWidget::changeColor(QColor const &color)
@@ -117,7 +151,7 @@ void SaturationBrightnessWidget::setHue(int h)
 	} else {
 		h %= 360;
 	}
-	hue = h;
+	m->hue = h;
 	updatePixmap(true);
 	changeColor(QColor::fromHsv(h, 255, 255));
 	update();

@@ -16,6 +16,7 @@
 struct MainWindow::Private {
 	Document doc;
 	QColor foreground_color;
+	Brush current_brush;
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -26,14 +27,21 @@ MainWindow::MainWindow(QWidget *parent)
 	ui->setupUi(this);
 	ui->horizontalSlider_size->setValue(1);
 	ui->horizontalSlider_softness->setValue(0);
-	ui->widget->setBrushSize(1);
-	ui->widget->setBrushSoftness(0 / 100.0);
+//	ui->widget->setBrushSize(1);
+//	ui->widget->setBrushSoftness(0 / 100.0);
 	ui->widget_image_view->bind(this, ui->verticalScrollBar, ui->horizontalScrollBar);
 	ui->widget_image_view->setMouseTracking(true);
 
 	connect(ui->widget_hue, SIGNAL(hueChanged(int)), this, SLOT(onHueChanged(int)));
 
 	setForegroundColor(Qt::red);
+
+	{
+		Brush b;
+		b.size = 85;
+		b.softness = 1.0;
+		ui->widget_brush->setBrush(b);
+	}
 }
 
 MainWindow::~MainWindow()
@@ -72,6 +80,24 @@ void MainWindow::setForegroundColor(const QColor &color)
 QColor MainWindow::foregroundColor() const
 {
 	return m->foreground_color;
+}
+
+void MainWindow::setCurrentBrush(const Brush &brush)
+{
+	m->current_brush = brush;
+	bool f1 = ui->horizontalSlider_size->blockSignals(true);
+	bool f2 = ui->horizontalSlider_softness->blockSignals(true);
+
+	ui->horizontalSlider_size->setValue(brush.size);
+	ui->horizontalSlider_softness->setValue(brush.softness * 100);
+
+	ui->horizontalSlider_softness->blockSignals(f2);
+	ui->horizontalSlider_size->blockSignals(f1);
+}
+
+Brush const &MainWindow::currentBrush() const
+{
+	return m->current_brush;
 }
 
 void MainWindow::setImage(const QImage &image, bool fitview)
@@ -118,12 +144,12 @@ void MainWindow::fitView()
 
 void MainWindow::on_horizontalSlider_size_valueChanged(int value)
 {
-	ui->widget->setBrushSize(value);
+	ui->widget_brush->setBrushSize(value);
 }
 
 void MainWindow::on_horizontalSlider_softness_valueChanged(int value)
 {
-	ui->widget->setBrushSoftness(value / 100.0);
+	ui->widget_brush->setBrushSoftness(value / 100.0);
 }
 
 void MainWindow::onHueChanged(int hue)
@@ -268,13 +294,11 @@ void MainWindow::applyBrush(Document::Layer const &layer, bool update)
 
 void MainWindow::drawBrush(double x, double y)
 {
-	int size = 85;
-	double softness = 1.0;
-	RoundBrushGenerator brush(size, softness);
-	int x0 = floor(x - size / 2.0);
-	int y0 = floor(y - size / 2.0);
-	int x1 = ceil(x + size / 2.0);
-	int y1 = ceil(y + size / 2.0);
+	RoundBrushGenerator brush(currentBrush().size, currentBrush().softness);
+	int x0 = floor(x - currentBrush().size / 2.0);
+	int y0 = floor(y - currentBrush().size / 2.0);
+	int x1 = ceil(x + currentBrush().size / 2.0);
+	int y1 = ceil(y + currentBrush().size / 2.0);
 	int w = x1 - x0;
 	int h = y1 - y0;
 	QImage image(w, h, QImage::Format_Grayscale8);
@@ -307,8 +331,9 @@ void MainWindow::onPenStroke(double x, double y)
 
 void MainWindow::onPenUp(double x, double y)
 {
+	(void)x;
+	(void)y;
 }
-
 
 void MainWindow::onMouseLeftButtonPress(int x, int y)
 {

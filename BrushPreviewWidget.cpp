@@ -40,7 +40,7 @@ void BrushPreviewWidget::paintEvent(QPaintEvent *)
 	double x = cx + 0.5;
 	double y = cy + 0.5;
 
-	RoundBrushGenerator brush(size, softness);
+	RoundBrushGenerator brush(brush_.size, brush_.softness);
 
 	QImage image(w, h, QImage::Format_ARGB32);
 #if USE_OPENCL
@@ -86,26 +86,38 @@ void BrushPreviewWidget::paintEvent(QPaintEvent *)
 	pr.drawImage(0, 0, image);
 }
 
+void BrushPreviewWidget::changeBrush()
+{
+	mainwindow()->setCurrentBrush(brush_);
+	update();
+}
+
 double BrushPreviewWidget::brushSize() const
 {
-	return size;
+	return brush_.size;
 }
 
 double BrushPreviewWidget::brushSoftness() const
 {
-	return softness;
+	return brush_.softness;
 }
 
 void BrushPreviewWidget::setBrushSize(double v)
 {
-	size = v;
-	update();
+	brush_.size = v;
+	changeBrush();
 }
 
 void BrushPreviewWidget::setBrushSoftness(double v)
 {
-	softness = v;
-	update();
+	brush_.softness = v;
+	changeBrush();
+}
+
+void BrushPreviewWidget::setBrush(Brush const &b)
+{
+	brush_ = b;
+	changeBrush();
 }
 
 #if USE_OPENCL

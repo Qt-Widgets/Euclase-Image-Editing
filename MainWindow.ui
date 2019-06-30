@@ -15,17 +15,32 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
     <item>
      <widget class="QFrame" name="frame_4">
       <property name="minimumSize">
        <size>
-        <width>240</width>
+        <width>192</width>
         <height>0</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>240</width>
+        <width>192</width>
         <height>16777215</height>
        </size>
       </property>
@@ -37,16 +52,16 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <property name="leftMargin">
-        <number>0</number>
+        <number>3</number>
        </property>
        <property name="topMargin">
-        <number>0</number>
+        <number>3</number>
        </property>
        <property name="rightMargin">
-        <number>0</number>
+        <number>3</number>
        </property>
        <property name="bottomMargin">
-        <number>0</number>
+        <number>3</number>
        </property>
        <item>
         <widget class="QFrame" name="frame_3">
@@ -69,6 +84,9 @@
           <enum>QFrame::Raised</enum>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout">
+          <property name="spacing">
+           <number>2</number>
+          </property>
           <property name="leftMargin">
            <number>0</number>
           </property>
@@ -82,19 +100,23 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="QSplitter" name="splitter">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
+           <widget class="SaturationBrightnessWidget" name="widget_color" native="true">
+            <property name="minimumSize">
+             <size>
+              <width>160</width>
+              <height>160</height>
+             </size>
             </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
+            <property name="maximumSize">
+             <size>
+              <width>160</width>
+              <height>160</height>
+             </size>
             </property>
-            <widget class="SaturationBrightnessWidget" name="widget_color" native="true"/>
-            <widget class="HueWidget" name="widget_hue" native="true"/>
            </widget>
+          </item>
+          <item>
+           <widget class="HueWidget" name="widget_hue" native="true"/>
           </item>
          </layout>
         </widget>
@@ -159,7 +181,7 @@
            </widget>
           </item>
           <item>
-           <widget class="BrushPreviewWidget" name="widget" native="true">
+           <widget class="BrushPreviewWidget" name="widget_brush" native="true">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
               <horstretch>0</horstretch>
@@ -242,7 +264,7 @@
      <x>0</x>
      <y>0</y>
      <width>615</width>
-     <height>21</height>
+     <height>18</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Edit">

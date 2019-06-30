@@ -18,7 +18,7 @@ private:
 	Private *m;
 	MainWindow *mainwindow();
 	void updatePixmap(bool force);
-	QImage createPixmap(int w, int h);
+	QImage createImage(int w, int h);
 	void changeColor(const QColor &color);
 	void press(const QPoint &pos);
 protected:

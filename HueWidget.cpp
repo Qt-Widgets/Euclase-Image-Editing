@@ -88,7 +88,7 @@ void HueWidget::mouseMoveEvent(QMouseEvent *e)
 	}
 }
 
-void HueWidget::mouseReleaseEvent(QMouseEvent *e)
+void HueWidget::mouseReleaseEvent(QMouseEvent *)
 {
 	hue += hue_add;
 	hue_add = 0;
@@ -109,7 +109,7 @@ void HueWidget::wheelEvent(QWheelEvent *e)
 	emit_hueChanged_();
 }
 
-void HueWidget::mouseDoubleClickEvent(QMouseEvent *e)
+void HueWidget::mouseDoubleClickEvent(QMouseEvent *)
 {
 	QPoint pos = QCursor::pos();
 	pos = mapFromGlobal(pos);

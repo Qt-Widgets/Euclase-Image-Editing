@@ -13,6 +13,8 @@ private:
 	struct Private;
 	Private *m;
 
+	MainWindow *mainwindow();
+
 	Document *document();
 	Document const *document() const;
 
@@ -31,7 +33,6 @@ private:
 	void updateCursorAnchorPos();
 	void updateCenterAnchorPos();
 protected:
-	MainWindow *mainwindow();
 	void resizeEvent(QResizeEvent *) override;
 	void paintEvent(QPaintEvent *) override;
 	void mousePressEvent(QMouseEvent *event) override;
@@ -58,9 +59,6 @@ public:
 	static QImage filter_median_yuva64(QImage srcimage);
 signals:
 	void scrollByWheel(int lines);
-
-	// QWidget interface
-protected:
 };
 
 #endif // IMAGEVIEWWIDGET_H

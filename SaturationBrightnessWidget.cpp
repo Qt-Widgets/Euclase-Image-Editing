@@ -9,7 +9,7 @@
 
 struct SaturationBrightnessWidget::Private {
 	int hue = 0;
-	QImage pixmap;
+	QImage image;
 	QRect rect;
 };
 
@@ -56,7 +56,7 @@ MiraCL *SaturationBrightnessWidget::getCL()
 }
 #endif
 
-QImage SaturationBrightnessWidget::createPixmap(int w, int h)
+QImage SaturationBrightnessWidget::createImage(int w, int h)
 {
 	QImage image(w, h, QImage::Format_RGB32);
 #if USE_OPENCL
@@ -100,21 +100,21 @@ void SaturationBrightnessWidget::updatePixmap(bool force)
 	int w = width();
 	int h = height();
 	if (w > 1 && h > 1) {
-		if ((m->pixmap.width() != w || m->pixmap.height() != h) || force) {
-			m->pixmap = createPixmap(w, h);
+		if ((m->image.width() != w || m->image.height() != h) || force) {
+			m->image = createImage(w, h);
 			m->rect = QRect(0, 0, w, h);
 		}
 	} else {
-		m->pixmap = QImage();
+		m->image = QImage();
 	}
 }
 
 void SaturationBrightnessWidget::paintEvent(QPaintEvent *)
 {
 	updatePixmap(false);
-	if (!m->pixmap.isNull()) {
+	if (!m->image.isNull()) {
 		QPainter pr(this);
-		pr.drawImage(0, 0, m->pixmap);
+		pr.drawImage(0, 0, m->image);
 		drawFrame(&pr, 0, 0, width(), height());
 	}
 }
@@ -123,8 +123,8 @@ void SaturationBrightnessWidget::press(QPoint const &pos)
 {
 	int x = pos.x() - m->rect.x();
 	int y = pos.y() - m->rect.y();
-	if (x >= 0 && x < m->pixmap.width() && y >= 0 && y < m->pixmap.height()) {
-		QColor color = m->pixmap.pixelColor(QPoint(x, y));
+	if (x >= 0 && x < m->image.width() && y >= 0 && y < m->image.height()) {
+		QColor color(m->image.pixel(QPoint(x, y)));
 		mainwindow()->setForegroundColor(color);
 	}
 }

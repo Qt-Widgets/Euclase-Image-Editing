@@ -22,13 +22,9 @@ using SvgRendererPtr = std::shared_ptr<QSvgRenderer>;
 
 struct ImageViewWidget::Private {
 	MainWindow *mainwindow = nullptr;
-//	FileDiffWidget *filediffwidget = nullptr;
-//	FileDiffWidget::DrawData *draw_data = nullptr;
 	QScrollBar *v_scroll_bar = nullptr;
 	QScrollBar *h_scroll_bar = nullptr;
 	QString mime_type;
-
-//	SvgRendererPtr svg;
 
 	double image_scroll_x = 0;
 	double image_scroll_y = 0;
@@ -41,7 +37,6 @@ struct ImageViewWidget::Private {
 	QPointF center_anchor_pos;
 	int top_margin = 1;
 	int bottom_margin = 1;
-//	bool draw_left_border = true;
 
 	bool left_button = false;
 
@@ -412,7 +407,7 @@ QPointF ImageViewWidget::mapFromViewport(QPointF const &pos)
 	return QPointF(x, y);
 }
 
-void ImageViewWidget::mouseMoveEvent(QMouseEvent *e)
+void ImageViewWidget::mouseMoveEvent(QMouseEvent *)
 {
 	if (isValidImage()) {
 		QPoint pos = mapFromGlobal(QCursor::pos());
@@ -430,7 +425,7 @@ void ImageViewWidget::mouseMoveEvent(QMouseEvent *e)
 	}
 }
 
-void ImageViewWidget::mouseReleaseEvent(QMouseEvent *e)
+void ImageViewWidget::mouseReleaseEvent(QMouseEvent *)
 {
 	if (isValidImage()) {
 		QPoint pos = mapFromGlobal(QCursor::pos());

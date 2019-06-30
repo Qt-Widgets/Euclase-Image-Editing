@@ -32,6 +32,8 @@ MainWindow::MainWindow(QWidget *parent)
 	ui->widget_image_view->bind(this, ui->verticalScrollBar, ui->horizontalScrollBar);
 	ui->widget_image_view->setMouseTracking(true);
 
+	ui->tabWidget->setCurrentWidget(ui->tab_color_rgb);
+
 	connect(ui->widget_hue, SIGNAL(hueChanged(int)), this, SLOT(onHueChanged(int)));
 
 	setForegroundColor(Qt::red);
@@ -75,6 +77,21 @@ int MainWindow::documentHeight() const
 void MainWindow::setForegroundColor(const QColor &color)
 {
 	m->foreground_color = color;
+	int r = color.red();
+	int g = color.green();
+	int b = color.blue();
+
+	auto Set = [](int v, QSlider *slider, QSpinBox *spin){
+		bool f1 = slider->blockSignals(true);
+		slider->setValue(v);
+		slider->blockSignals(f1);
+		bool f2 = spin->blockSignals(true);
+		spin->setValue(v);
+		spin->blockSignals(f2);
+	};
+	Set(r, ui->horizontalSlider_rgb_r, ui->spinBox_rgb_r);
+	Set(g, ui->horizontalSlider_rgb_g, ui->spinBox_rgb_g);
+	Set(b, ui->horizontalSlider_rgb_b, ui->spinBox_rgb_b);
 }
 
 QColor MainWindow::foregroundColor() const
@@ -375,3 +392,61 @@ void MainWindow::drawBrush()
 {
 	openFile("../lena_std.png");
 }
+
+void MainWindow::setRed(int value)
+{
+	QColor c = foregroundColor();
+	int r = value;
+	int g = c.green();
+	int b = c.blue();
+	setForegroundColor(QColor(r, g, b));
+}
+
+void MainWindow::setGreen(int value)
+{
+	QColor c = foregroundColor();
+	int r = c.red();
+	int g = value;
+	int b = c.blue();
+	setForegroundColor(QColor(r, g, b));
+}
+
+void MainWindow::setBlue(int value)
+{
+	QColor c = foregroundColor();
+	int r = c.red();
+	int g = c.green();
+	int b = value;
+	setForegroundColor(QColor(r, g, b));
+}
+
+void MainWindow::on_horizontalSlider_rgb_r_valueChanged(int value)
+{
+	setRed(value);
+}
+
+void MainWindow::on_horizontalSlider_rgb_g_valueChanged(int value)
+{
+	setGreen(value);
+}
+
+void MainWindow::on_horizontalSlider_rgb_b_valueChanged(int value)
+{
+	setBlue(value);
+}
+
+void MainWindow::on_spinBox_rgb_r_valueChanged(int value)
+{
+	setRed(value);
+}
+
+void MainWindow::on_spinBox_rgb_g_valueChanged(int value)
+{
+	setGreen(value);
+}
+
+void MainWindow::on_spinBox_rgb_b_valueChanged(int value)
+{
+	setBlue(value);
+}
+

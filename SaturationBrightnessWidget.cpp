@@ -123,10 +123,10 @@ void SaturationBrightnessWidget::press(QPoint const &pos)
 {
 	int x = pos.x() - m->rect.x();
 	int y = pos.y() - m->rect.y();
-	if (x >= 0 && x < m->image.width() && y >= 0 && y < m->image.height()) {
-		QColor color(m->image.pixel(QPoint(x, y)));
-		mainwindow()->setForegroundColor(color);
-	}
+	x = std::max(0, std::min(x, m->image.width() - 1));
+	y = std::max(0, std::min(y, m->image.height() - 1));
+	QColor color(m->image.pixel(QPoint(x, y)));
+	mainwindow()->setForegroundColor(color);
 }
 
 void SaturationBrightnessWidget::mousePressEvent(QMouseEvent *event)

@@ -127,16 +127,3 @@ MiraCL *BrushPreviewWidget::getCL()
 }
 #endif
 
-float approx_distance(float x, float y)
-{
-	float n = x * x + y * y;
-
-	float s = 1;
-	s = (n / s + s) / 2;
-	s = (n / s + s) / 2;
-	s = (n / s + s) / 2;
-	s = (n / s + s) / 2;
-	return s;
-}
-
-

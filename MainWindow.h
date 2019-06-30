@@ -25,6 +25,9 @@ private:
 	void drawBrush();
 	void drawBrush(double x, double y);
 	void applyBrush(const Document::Layer &layer, bool update);
+	void setRed(int value);
+	void setGreen(int value);
+	void setBlue(int value);
 protected:
 	void keyPressEvent(QKeyEvent *event);
 public:
@@ -66,6 +69,12 @@ private slots:
 	void on_horizontalSlider_size_valueChanged(int value);
 	void on_horizontalSlider_softness_valueChanged(int value);
 	void on_verticalScrollBar_valueChanged(int value);
+	void on_horizontalSlider_rgb_r_valueChanged(int value);
+	void on_horizontalSlider_rgb_g_valueChanged(int value);
+	void on_horizontalSlider_rgb_b_valueChanged(int value);
+	void on_spinBox_rgb_r_valueChanged(int value);
+	void on_spinBox_rgb_g_valueChanged(int value);
+	void on_spinBox_rgb_b_valueChanged(int value);
 };
 
 #endif // MAINWINDOW_H

@@ -1,7 +1,8 @@
 #ifndef ROUNDBRUSHGENERATOR_H
 #define ROUNDBRUSHGENERATOR_H
 
-struct Brush {
+class Brush {
+public:
 	double size = 200;
 	double softness = 1;
 };

@@ -7,155 +7,12 @@
 #include <vector>
 #include <string.h>
 #include <stdint.h>
+#include "euclase.h"
 
 namespace {
 
-inline uint8_t gray(uint8_t r, uint8_t g, uint8_t b)
-{
-	return (306 * r + 601 * g + 117 * b + 512) / 1024;
-}
-
-struct PixelRGBA;
-struct PixelGrayA;
-
-//
-
-struct PixelRGBA {
-	uint8_t r, g, b, a;
-	PixelRGBA()
-		: r(0)
-		, g(0)
-		, b(0)
-		, a(0)
-	{
-	}
-	PixelRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
-		: r(r)
-		, g(g)
-		, b(b)
-		, a(a)
-	{
-	}
-	PixelRGBA(PixelGrayA const &pixel);
-};
-
-struct PixelGrayA {
-	uint8_t y, a;
-	PixelGrayA()
-		: y(0)
-		, a(0)
-	{
-	}
-	PixelGrayA(uint8_t y, uint8_t a)
-		: y(y)
-		, a(a)
-	{
-	}
-	PixelGrayA(PixelRGBA const &pixel);
-};
-
-inline uint8_t gray(PixelRGBA const &rgba)
-{
-	return rgba.a == 0 ? 0 : gray(rgba.r, rgba.g, rgba.b);
-}
-
-inline PixelRGBA::PixelRGBA(PixelGrayA const &pixel)
-	: r(pixel.y)
-	, g(pixel.y)
-	, b(pixel.y)
-	, a(pixel.a)
-{
-}
-
-inline PixelGrayA::PixelGrayA(PixelRGBA const &pixel)
-	: y(gray(pixel))
-	, a(pixel.a)
-{
-}
-
-//
-
-struct FPixelRGBA {
-	double r, g, b, a, n;
-	FPixelRGBA()
-		: r(0)
-		, g(0)
-		, b(0)
-		, a(0)
-		, n(0)
-	{
-	}
-	FPixelRGBA(double r, double g, double b, double a)
-		: r(r)
-		, g(g)
-		, b(b)
-		, a(a)
-		, n(1)
-	{
-	}
-	void add(PixelRGBA const &t)
-	{
-		r += t.r * t.a;
-		g += t.g * t.a;
-		b += t.b * t.a;
-		a += t.a;
-		n++;
-	}
-	void sub(PixelRGBA const &t)
-	{
-		r -= t.r * t.a;
-		g -= t.g * t.a;
-		b -= t.b * t.a;
-		a -= t.a;
-		n--;
-	}
-	operator PixelRGBA ()
-	{
-		PixelRGBA pixel;
-		pixel.r = (uint8_t)(r / a);
-		pixel.g = (uint8_t)(g / a);
-		pixel.b = (uint8_t)(b / a);
-		pixel.a = (uint8_t)(a / n);
-		return pixel;
-	}
-};
-
-//
-
-struct FPixelGray {
-	double y, a, n;
-	FPixelGray()
-		: y(0)
-		, a(0)
-		, n(0)
-	{
-	}
-	FPixelGray(double y, double a)
-		: y(y)
-		, a(a)
-		, n(1)
-	{
-	}
-	void add(PixelGrayA const &t)
-	{
-		y += t.y * t.a;
-		a += t.a;
-		n++;
-	}
-	void sub(PixelGrayA const &t)
-	{
-		y -= t.y * t.a;
-		a -= t.a;
-		n--;
-	}
-	operator PixelGrayA ()
-	{
-		PixelGrayA pixel;
-		pixel.y = (uint8_t)(y / a);
-		pixel.a = (uint8_t)(a / n);
-		return pixel;
-	}
-};
+using PixelRGBA = euclase::PixelRGBA;
+using PixelGrayA = euclase::PixelGrayA;
 
 //
 
@@ -243,18 +100,18 @@ struct median_filter_rgb_t {
 };
 
 struct median_filter_y_t {
-	median_t y;
+	median_t l;
 	void insert(PixelGrayA const &p)
 	{
-		y.insert(p.y);
+		l.insert(p.l);
 	}
 	void remove(PixelGrayA const &p)
 	{
-		y.remove(p.y);
+		l.remove(p.l);
 	}
 	PixelGrayA get(uint8_t a)
 	{
-		return PixelGrayA(y.get(), a);
+		return PixelGrayA(l.get(), a);
 	}
 };
 
@@ -330,18 +187,18 @@ struct minimize_filter_rgb_t {
 };
 
 struct minimize_filter_y_t {
-	minimize_t y;
+	minimize_t l;
 	void insert(PixelGrayA const &p)
 	{
-		y.insert(p.y);
+		l.insert(p.l);
 	}
 	void remove(PixelGrayA const &p)
 	{
-		y.remove(p.y);
+		l.remove(p.l);
 	}
 	PixelGrayA get(uint8_t a)
 	{
-		return PixelGrayA(y.get(), a);
+		return PixelGrayA(l.get(), a);
 	}
 };
 
@@ -420,18 +277,18 @@ struct maximize_filter_rgb_t {
 };
 
 struct maximize_filter_y_t {
-	maximize_t y;
+	maximize_t l;
 	void insert(PixelGrayA const &p)
 	{
-		y.insert(p.y);
+		l.insert(p.l);
 	}
 	void remove(PixelGrayA const &p)
 	{
-		y.remove(p.y);
+		l.remove(p.l);
 	}
 	PixelGrayA get(uint8_t a)
 	{
-		return PixelGrayA(y.get(), a);
+		return PixelGrayA(l.get(), a);
 	}
 };
 

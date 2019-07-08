@@ -21,6 +21,7 @@ SOURCES += main.cpp\
     HueWidget.cpp \
     SaturationBrightnessWidget.cpp \
 	antialias.cpp \
+	euclase.cpp \
 	median.cpp \
     misc.cpp \
     RoundBrushGenerator.cpp \
@@ -39,6 +40,7 @@ HEADERS  += MainWindow.h \
     MiraCL.h \
     MyWidget.h \
     antialias.h \
+    euclase.h \
     main.h \
     MyApplication.h \
     HueWidget.h \

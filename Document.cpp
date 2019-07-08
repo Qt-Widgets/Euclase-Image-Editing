@@ -107,15 +107,15 @@ void Document::blend(Layer const &selection_layer, QColor const &brush_color, La
 			}
 		}
 	} else if (target_layer->isGrayscale8()) {
-		AlphaBlend::YA88 color(AlphaBlend::gray(c.red(), c.green(), c.blue()));
+		AlphaBlend::GrayA88 color(euclase::gray(c.red(), c.green(), c.blue()));
 		for (int i = 0; i < h; i++) {
-			using Pixel = AlphaBlend::YA88;
+			using Pixel = AlphaBlend::GrayA88;
 			uint8_t const *m = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
 			uint8_t const *s = reinterpret_cast<uint8_t const *>(selection.scanLine(y + i));
 			uint8_t *d = reinterpret_cast<uint8_t *>(target_layer->image.scanLine(dy0 + i));
 			for (int j = 0; j < w; j++) {
 				color.a = opacity * s[x + j] * m[j] / (255 * 255);
-				d[dx0 + j] = AlphaBlend::blend(Pixel(d[dx0 + j]), color).y;
+				d[dx0 + j] = AlphaBlend::blend(Pixel(d[dx0 + j]), color).l;
 			}
 		}
 	}

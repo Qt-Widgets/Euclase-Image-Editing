@@ -22,12 +22,12 @@ private:
 	void setImage(const QImage &image, bool fitview);
 	void setImage(QByteArray const &ba);
 
-	void drawBrush();
 	void drawBrush(double x, double y);
 	void applyBrush(const Document::Layer &layer, bool update);
 	void setRed(int value);
 	void setGreen(int value);
 	void setBlue(int value);
+	void test();
 protected:
 	void keyPressEvent(QKeyEvent *event);
 public:

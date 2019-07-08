@@ -27,8 +27,6 @@ MainWindow::MainWindow(QWidget *parent)
 	ui->setupUi(this);
 	ui->horizontalSlider_size->setValue(1);
 	ui->horizontalSlider_softness->setValue(0);
-//	ui->widget->setBrushSize(1);
-//	ui->widget->setBrushSoftness(0 / 100.0);
 	ui->widget_image_view->bind(this, ui->verticalScrollBar, ui->horizontalScrollBar);
 	ui->widget_image_view->setMouseTracking(true);
 
@@ -377,22 +375,6 @@ void MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
 	}
 }
 
-void MainWindow::keyPressEvent(QKeyEvent *event)
-{
-	int k = event->key();
-	if (k == Qt::Key_T) {
-		if (event->modifiers() & Qt::ControlModifier) {
-			drawBrush();
-		}
-	}
-
-}
-
-void MainWindow::drawBrush()
-{
-	openFile("../lena_std.png");
-}
-
 void MainWindow::setRed(int value)
 {
 	QColor c = foregroundColor();
@@ -448,5 +430,20 @@ void MainWindow::on_spinBox_rgb_g_valueChanged(int value)
 void MainWindow::on_spinBox_rgb_b_valueChanged(int value)
 {
 	setBlue(value);
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+	int k = event->key();
+	if (k == Qt::Key_T) {
+		if (event->modifiers() & Qt::ControlModifier) {
+			test();
+		}
+	}
+
+}
+
+void MainWindow::test()
+{
 }
 

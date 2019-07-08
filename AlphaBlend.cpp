@@ -1,9 +1,9 @@
 #include "AlphaBlend.h"
 
-AlphaBlend::AlphaBlend()
-{
+//AlphaBlend::AlphaBlend()
+//{
 
-}
+//}
 
 
 

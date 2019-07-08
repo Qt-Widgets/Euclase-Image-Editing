@@ -95,9 +95,9 @@ void Document::blend(Layer const &selection_layer, QColor const &brush_color, La
 	QColor const &c = brush_color;
 
 	if (target_layer->isRGBA8888()) {
-		AlphaBlend::RGBA8888 color(c.red(), c.green(), c.blue());
+		euclase::PixelRGBA color(c.red(), c.green(), c.blue());
 		for (int i = 0; i < h; i++) {
-			using Pixel = AlphaBlend::RGBA8888;
+			using Pixel = euclase::PixelRGBA;
 			uint8_t const *m = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
 			uint8_t const *s = selection.scanLine(y + i);
 			Pixel *d = reinterpret_cast<Pixel *>(target_layer->image.scanLine(dy0 + i));
@@ -107,9 +107,9 @@ void Document::blend(Layer const &selection_layer, QColor const &brush_color, La
 			}
 		}
 	} else if (target_layer->isGrayscale8()) {
-		AlphaBlend::GrayA88 color(euclase::gray(c.red(), c.green(), c.blue()));
+		euclase::PixelGrayA color(euclase::gray(c.red(), c.green(), c.blue()));
 		for (int i = 0; i < h; i++) {
-			using Pixel = AlphaBlend::GrayA88;
+			using Pixel = euclase::PixelGrayA;
 			uint8_t const *m = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
 			uint8_t const *s = reinterpret_cast<uint8_t const *>(selection.scanLine(y + i));
 			uint8_t *d = reinterpret_cast<uint8_t *>(target_layer->image.scanLine(dy0 + i));
@@ -151,8 +151,8 @@ void Document::renderSelection(QImage *dstimg, const QRect &r, QImage const &sel
 		pr2.drawImage(QRect(dx0, dy0, w, h), selimg, QRect(sx0, sy0, w, h));
 	}
 	{
-		using Pixel = AlphaBlend::RGBA8888;
-		AlphaBlend::RGBA8888 color(255, 0, 0, 128);
+		using Pixel = euclase::PixelRGBA;
+		euclase::PixelRGBA color(255, 0, 0, 128);
 		int opacity = color.a;
 
 		int w = r.width();

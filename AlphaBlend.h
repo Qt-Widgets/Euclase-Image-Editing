@@ -7,36 +7,34 @@
 
 class AlphaBlend {
 public:
-	AlphaBlend();
 
-	using RGBA8888 = euclase::PixelRGBA;
-	using GrayA88 = euclase::PixelGrayA;
-
-	using FloatRGBA = euclase::FPixelRGBA;
+	using PixelRGBA = euclase::PixelRGBA;
+	using PixelGrayA = euclase::PixelGrayA;
+	using FPixelRGBA = euclase::FPixelRGBA;
 
 	static inline int div255(int v)
 	{
 		return (v * 257 + 256) / 65536;
 	}
 
-	static float gamma(float v)
+	static inline float gamma(float v)
 	{
 		return sqrt(v);
 	}
 
-	static float degamma(float v)
+	static inline float degamma(float v)
 	{
 		return v * v;
 	}
 
-	static FloatRGBA gamma(FloatRGBA const &pix)
+	static inline FPixelRGBA gamma(FPixelRGBA const &pix)
 	{
-		return FloatRGBA(gamma(pix.r), gamma(pix.g), gamma(pix.b), pix.a);
+		return FPixelRGBA(gamma(pix.r), gamma(pix.g), gamma(pix.b), pix.a);
 	}
 
-	static FloatRGBA degamma(FloatRGBA const &pix)
+	static inline FPixelRGBA degamma(FPixelRGBA const &pix)
 	{
-		return FloatRGBA(degamma(pix.r), degamma(pix.g), degamma(pix.b), pix.a);
+		return FPixelRGBA(degamma(pix.r), degamma(pix.g), degamma(pix.b), pix.a);
 	}
 
 	class fixed_t {
@@ -102,20 +100,20 @@ public:
 			, a(a)
 		{
 		}
-		FixedRGBA(RGBA8888 const &t)
+		FixedRGBA(PixelRGBA const &t)
 			: r(t.r)
 			, g(t.g)
 			, b(t.b)
 			, a(t.a)
 		{
 		}
-		operator RGBA8888 () const
+		operator PixelRGBA () const
 		{
-			return RGBA8888((uint8_t)r, (uint8_t)g, (uint8_t)b, (uint8_t)a);
+			return PixelRGBA((uint8_t)r, (uint8_t)g, (uint8_t)b, (uint8_t)a);
 		}
 	};
 
-	static inline RGBA8888 blend(RGBA8888 const &base, RGBA8888 const &over)
+	static inline PixelRGBA blend(PixelRGBA const &base, PixelRGBA const &over)
 	{
 		if (over.a == 0) return base;
 		if (base.a == 0 || over.a == 255) return over;
@@ -123,19 +121,19 @@ public:
 		int g = over.g * over.a * 255 + base.g * base.a * (255 - over.a);
 		int b = over.b * over.a * 255 + base.b * base.a * (255 - over.a);
 		int a = over.a * 255 + base.a * (255 - over.a);
-		return RGBA8888(r / a, g / a, b / a, div255(a));
+		return PixelRGBA(r / a, g / a, b / a, div255(a));
 	}
 
-	static inline GrayA88 blend(GrayA88 const &base, GrayA88 const &over)
+	static inline PixelGrayA blend(PixelGrayA const &base, PixelGrayA const &over)
 	{
 		if (over.a == 0) return base;
 		if (base.a == 0 || over.a == 255) return over;
 		int y = over.l * over.a * 255 + base.l * base.a * (255 - over.a);
 		int a = over.a * 255 + base.a * (255 - over.a);
-		return GrayA88(y / a, div255(a));
+		return PixelGrayA(y / a, div255(a));
 	}
 
-	static inline FloatRGBA blend(FloatRGBA const &base, FloatRGBA const &over)
+	static inline FPixelRGBA blend(FPixelRGBA const &base, FPixelRGBA const &over)
 	{
 		if (over.a <= 0) return base;
 		if (base.a <= 0 || over.a >= 1) return over;
@@ -143,12 +141,12 @@ public:
 		float g = over.g * over.a + base.g * base.a * (1 - over.a);
 		float b = over.b * over.a + base.b * base.a * (1 - over.a);
 		float a = over.a + base.a * (1 - over.a);
-		return FloatRGBA(r / a, g / a, b / a, a);
+		return FPixelRGBA(r / a, g / a, b / a, a);
 	}
 
-	static inline RGBA8888 blend_with_gamma_collection(RGBA8888 const &base, RGBA8888 const &over)
+	static inline PixelRGBA blend_with_gamma_collection(PixelRGBA const &base, PixelRGBA const &over)
 	{
-		return (RGBA8888)gamma(blend(degamma(FloatRGBA(base)), degamma(FloatRGBA(over))));
+		return (PixelRGBA)gamma(blend(degamma(FPixelRGBA(base)), degamma(FPixelRGBA(over))));
 	}
 };
 

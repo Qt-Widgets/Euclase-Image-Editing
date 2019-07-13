@@ -1,9 +1,10 @@
 #ifndef EUCLASE_H
 #define EUCLASE_H
 
+#include <QPoint>
 #include <algorithm>
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
 
 namespace euclase {
 
@@ -407,6 +408,13 @@ static inline FPixelRGBA degamma(FPixelRGBA const &pix)
 {
 	return FPixelRGBA(degamma(pix.r), degamma(pix.g), degamma(pix.b), pix.a);
 }
+
+// cubic bezier curve
+
+double cubicBezierPoint(double p0, double p1, double p2, double p3, double t);
+double cubicBezierGradient(double p0, double p1, double p2, double p3, double t);
+QPointF cubicBezierPoint(QPointF &p0, QPointF &p1, QPointF &p2, QPointF &p3, double t);
+void cubicBezierSplit(QPointF *p0, QPointF *p1, QPointF *p2, QPointF *p3, QPointF *q0, QPointF *q1, QPointF *q2, QPointF *q3, double t);
 
 } // namespace euclase
 

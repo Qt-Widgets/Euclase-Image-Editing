@@ -448,20 +448,45 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 }
 
-double f(double p0, double p1, double p2, double p3, double t)
-{
-	double u = 1 - t;
-	return p0 * u * u * u + p1 * u * u * t * 3 + p2 * u * t * t * 3 + p3 * t * t * t;
-}
-
 void MainWindow::test()
 {
+	QPointF p0 = {  50,  50 };
+	QPointF p1 = { 200, 400 };
+	QPointF p2 = { 300, 100 };
+	QPointF p3 = { 450, 450 };
+	QPointF q0;
+	QPointF q1;
+	QPointF q2;
+	QPointF q3;
+	QPainterPath path;
+	if (1) {
+		double x = p0.x();
+		double y = p0.y();
+		path.moveTo(x, y);
+		for (int i = 0; i < 100; i++) {
+			double t = (i + 1) / 100.0;
+			QPointF pt = euclase::cubicBezierPoint(p0, p1, p2, p3, t);
+			path.lineTo(pt.x(), pt.y());
+		}
+	}
+	euclase::cubicBezierSplit(&p0, &p1, &p2, &p3, &q0, &q1, &q2, &q3, 0.8);
+	setForegroundColor(Qt::blue);
 	for (int i = 0; i < 100; i++) {
 		double t = i / 100.0;
-		double x = f(100, 200, 300, 400, t);
-		double y = f(100, 400, 100, 400, t);
-		drawBrush(x, y, false);
+		QPointF pt = euclase::cubicBezierPoint(p0, p1, p2, p3, t);
+		drawBrush(pt.x(), pt.y(), false);
 
+	}
+	setForegroundColor(Qt::green);
+	for (int i = 0; i < 100; i++) {
+		double t = i / 100.0;
+		QPointF pt = euclase::cubicBezierPoint(q0, q1, q2, q3, t);
+		drawBrush(pt.x(), pt.y(), false);
+
+	}
+	{
+		QPainter pr(&document()->current_layer()->image);
+		pr.drawPath(path);
 	}
 	updateImageView();
 }

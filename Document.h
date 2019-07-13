@@ -42,7 +42,7 @@ public:
 private:
 	static void renderSelection(QImage *dstimg, const QRect &r, const QImage &selimg);
 	static QImage renderLayer(const QRect &r, Layer const &current_layer, const QImage &selection_layer);
-	static void blend(const Layer &selection_layer, const QColor &brush_color, Layer *target_layer, Layer *mask_layer);
+	static void blend(const Layer &input_layer, const QColor &brush_color, Layer *target_layer, Layer *mask_layer);
 	static void renderMask(QImage *dstimg, const QRect &r, const QImage &selimg);
 };
 

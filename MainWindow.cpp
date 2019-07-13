@@ -118,7 +118,7 @@ Brush const &MainWindow::currentBrush() const
 void MainWindow::setImage(const QImage &image, bool fitview)
 {
 	document()->current_layer()->image = image.convertToFormat(QImage::Format_RGBA8888);
-	if (1) {
+	if (0) {
 		int w = documentWidth();
 		int h = documentHeight();
 		document()->selection_layer()->image = QImage(w, h, QImage::Format_Grayscale8);
@@ -298,16 +298,21 @@ void MainWindow::on_action_trim_triggered()
 	setImage(img, true);
 }
 
+void MainWindow::updateImageView()
+{
+	ui->widget_image_view->update();
+}
+
 void MainWindow::applyBrush(Document::Layer const &layer, bool update)
 {
 	document()->paint(layer, foregroundColor());
 
 	if (update) {
-		ui->widget_image_view->update();
+		updateImageView();
 	}
 }
 
-void MainWindow::drawBrush(double x, double y)
+void MainWindow::drawBrush(double x, double y, bool update)
 {
 	RoundBrushGenerator brush(currentBrush().size, currentBrush().softness);
 	int x0 = floor(x - currentBrush().size / 2.0);
@@ -331,17 +336,17 @@ void MainWindow::drawBrush(double x, double y)
 	Document::Layer layer;
 	layer.image = image;
 	layer.offset = QPoint(x0, y0);
-	applyBrush(layer, true);
+	applyBrush(layer, update);
 }
 
 void MainWindow::onPenDown(double x, double y)
 {
-	drawBrush(x, y);
+	drawBrush(x, y, true);
 }
 
 void MainWindow::onPenStroke(double x, double y)
 {
-	drawBrush(x, y);
+	drawBrush(x, y, true);
 }
 
 void MainWindow::onPenUp(double x, double y)
@@ -443,7 +448,21 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 }
 
+double f(double p0, double p1, double p2, double p3, double t)
+{
+	double u = 1 - t;
+	return p0 * u * u * u + p1 * u * u * t * 3 + p2 * u * t * t * 3 + p3 * t * t * t;
+}
+
 void MainWindow::test()
 {
+	for (int i = 0; i < 100; i++) {
+		double t = i / 100.0;
+		double x = f(100, 200, 300, 400, t);
+		double y = f(100, 400, 100, 400, t);
+		drawBrush(x, y, false);
+
+	}
+	updateImageView();
 }
 

@@ -51,13 +51,17 @@ Document::Layer *Document::selection_layer() const
 
 
 
-void Document::blend(Layer const &selection_layer, QColor const &brush_color, Layer *target_layer, Layer *mask_layer)
+void Document::blend(Layer const &input_layer, QColor const &brush_color, Layer *target_layer, Layer *mask_layer)
 {
-	Q_ASSERT(selection_layer.image.format() == QImage::Format_Grayscale8);
+	Q_ASSERT(input_layer.image.format() == QImage::Format_Grayscale8);
 
-	QImage const &selection = selection_layer.image;
-	int x = selection_layer.offset.x();
-	int y = selection_layer.offset.y();
+	if (mask_layer && mask_layer->image.isNull()) {
+		mask_layer = nullptr;
+	}
+
+	QImage const &selection = input_layer.image;
+	int x = input_layer.offset.x();
+	int y = input_layer.offset.y();
 
 	int w = target_layer->image.width();
 	int h = target_layer->image.height();
@@ -81,41 +85,43 @@ void Document::blend(Layer const &selection_layer, QColor const &brush_color, La
 	w = sx1 - sx0;
 	h = sy1 - sy0;
 
-	uint8_t *tmpmask = nullptr;
-	QImage maskimg;
-	if (mask_layer) {
-		renderMask(&maskimg, QRect(dx0, dy0, dx1 - dx0, dy1 - dy0), mask_layer->image);
-	} else {
-		tmpmask = (uint8_t *)alloca(w);
-		memset(tmpmask, 255, w);
-	}
-
-	int opacity = 128;
-
-	QColor const &c = brush_color;
-
-	if (target_layer->isRGBA8888()) {
-		euclase::PixelRGBA color(c.red(), c.green(), c.blue());
-		for (int i = 0; i < h; i++) {
-			using Pixel = euclase::PixelRGBA;
-			uint8_t const *m = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
-			uint8_t const *s = selection.scanLine(y + i);
-			Pixel *d = reinterpret_cast<Pixel *>(target_layer->image.scanLine(dy0 + i));
-			for (int j = 0; j < w; j++) {
-				color.a = opacity * s[x + j] * m[j] / (255 * 255);
-				d[dx0 + j] = AlphaBlend::blend_with_gamma_collection(d[dx0 + j], color);
-			}
+	if (w > 0 && h > 0) {
+		uint8_t *tmpmask = nullptr;
+		QImage maskimg;
+		if (mask_layer) {
+			renderMask(&maskimg, QRect(dx0, dy0, dx1 - dx0, dy1 - dy0), mask_layer->image);
+		} else {
+			tmpmask = (uint8_t *)alloca(w);
+			memset(tmpmask, 255, w);
 		}
-	} else if (target_layer->isGrayscale8()) {
-		euclase::PixelGrayA color(euclase::gray(c.red(), c.green(), c.blue()));
-		for (int i = 0; i < h; i++) {
-			using Pixel = euclase::PixelGrayA;
-			uint8_t const *m = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
-			uint8_t const *s = reinterpret_cast<uint8_t const *>(selection.scanLine(y + i));
-			uint8_t *d = reinterpret_cast<uint8_t *>(target_layer->image.scanLine(dy0 + i));
-			for (int j = 0; j < w; j++) {
-				color.a = opacity * s[x + j] * m[j] / (255 * 255);
-				d[dx0 + j] = AlphaBlend::blend(Pixel(d[dx0 + j]), color).l;
+
+		int opacity = 128;
+
+		QColor const &c = brush_color;
+
+		if (target_layer->isRGBA8888()) {
+			euclase::PixelRGBA color(c.red(), c.green(), c.blue());
+			for (int i = 0; i < h; i++) {
+				using Pixel = euclase::PixelRGBA;
+				uint8_t const *m = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
+				uint8_t const *s = selection.scanLine(y + i);
+				Pixel *d = reinterpret_cast<Pixel *>(target_layer->image.scanLine(dy0 + i));
+				for (int j = 0; j < w; j++) {
+					color.a = opacity * s[x + j] * m[j] / (255 * 255);
+					d[dx0 + j] = AlphaBlend::blend_with_gamma_collection(d[dx0 + j], color);
+				}
+			}
+		} else if (target_layer->isGrayscale8()) {
+			euclase::PixelGrayA color(euclase::gray(c.red(), c.green(), c.blue()));
+			for (int i = 0; i < h; i++) {
+				using Pixel = euclase::PixelGrayA;
+				uint8_t const *m = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
+				uint8_t const *s = reinterpret_cast<uint8_t const *>(selection.scanLine(y + i));
+				uint8_t *d = reinterpret_cast<uint8_t *>(target_layer->image.scanLine(dy0 + i));
+				for (int j = 0; j < w; j++) {
+					color.a = opacity * s[x + j] * m[j] / (255 * 255);
+					d[dx0 + j] = AlphaBlend::blend(Pixel(d[dx0 + j]), color).l;
+				}
 			}
 		}
 	}

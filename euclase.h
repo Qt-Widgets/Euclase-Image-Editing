@@ -78,9 +78,9 @@ public:
 	{
 	}
 	FPixelRGB(PixelRGBA const &src)
-		: r(src.r / 255.0)
-		, g(src.g / 255.0)
-		, b(src.b / 255.0)
+		: r(float(src.r / 255.0))
+		, g(float(src.g / 255.0))
+		, b(float(src.b / 255.0))
 	{
 	}
 	FPixelRGB operator + (FPixelRGB const &right) const
@@ -235,10 +235,10 @@ public:
 	{
 	}
 	FPixelRGBA(PixelRGBA const &src)
-		: r(src.r / 255.0)
-		, g(src.g / 255.0)
-		, b(src.b / 255.0)
-		, a(src.a / 255.0)
+		: r(float(src.r / 255.0))
+		, g(float(src.g / 255.0))
+		, b(float(src.b / 255.0))
+		, a(float(src.a / 255.0))
 	{
 	}
 	FPixelRGBA operator + (FPixelRGBA const &right) const
@@ -337,8 +337,8 @@ public:
 	{
 	}
 	FPixelGrayA(PixelGrayA const &src)
-		: l(src.l / 255.0)
-		, a(src.a / 255.0)
+		: l(float(src.l / 255.0))
+		, a(float(src.a / 255.0))
 	{
 	}
 	FPixelGrayA operator + (FPixelGrayA const &right) const

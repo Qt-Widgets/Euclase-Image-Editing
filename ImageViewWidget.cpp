@@ -9,6 +9,7 @@
 #include "misc.h"
 #include <QBuffer>
 #include <QDebug>
+#include <QElapsedTimer>
 #include <QFileDialog>
 #include <QMenu>
 #include <QPainter>

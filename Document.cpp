@@ -2,6 +2,7 @@
 #include "Document.h"
 
 #include <QDebug>
+#include <QElapsedTimer>
 #include <QPainter>
 
 struct Document::Private {
@@ -77,7 +78,11 @@ void Document::render(Layer::Panel *target_panel, Layer::Panel const *input_pane
 	w = sx1 - sx0;
 	h = sy1 - sy0;
 
-	if (w < 1 || h < 1) return;
+	if (w < 1 || h < 1) {
+//		qDebug() << "0";
+		return;
+	}
+//	qDebug() << "1";
 
 	QImage input_image = input_panel->image_;
 

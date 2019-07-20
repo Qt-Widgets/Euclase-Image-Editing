@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <QKeyEvent>
 #include <QDebug>
+#include <QElapsedTimer>
 
 struct MainWindow::Private {
 	Document doc;
@@ -387,6 +388,7 @@ void MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
 		QPointF pos(x + 0.5, y + 0.5);
 		pos = ui->widget_image_view->mapFromViewport(pos);
 		onPenUp(pos.x(), pos.y());
+//		updateImageView();
 	}
 }
 

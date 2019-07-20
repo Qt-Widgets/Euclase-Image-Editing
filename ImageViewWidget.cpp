@@ -176,10 +176,8 @@ bool ImageViewWidget::isValidImage() const
 
 QSize ImageViewWidget::imageSize() const
 {
-	if (!document()->current_layer()->image().isNull()) {
-		return document()->current_layer()->image().size();
-	}
-	return QSize();
+	auto layer = document()->current_layer();
+	return layer ? layer->size() : QSize();
 }
 
 void ImageViewWidget::paintEvent(QPaintEvent *)

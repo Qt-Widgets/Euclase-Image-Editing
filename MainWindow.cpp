@@ -117,9 +117,14 @@ Brush const &MainWindow::currentBrush() const
 
 void MainWindow::setImage(const QImage &image, bool fitview)
 {
-	document()->current_layer()->image() = QImage(image.width(), image.height(), QImage::Format_RGBA8888);
-	document()->current_layer()->image().fill(Qt::transparent);
-	Document::Layer layer;
+	int w = image.width();
+	int h = image.height();
+
+//	document()->current_layer()->image() = QImage(w, h, QImage::Format_RGBA8888);
+//	document()->current_layer()->image().fill(Qt::transparent);
+	document()->current_layer()->create(w, h);
+
+	Document::Layer layer(w, h);
 	layer.image() = image;
 	document()->blend(layer, QColor(), document()->current_layer(), nullptr);
 
@@ -338,7 +343,7 @@ void MainWindow::drawBrush(double x, double y, bool update)
 			dst[j] = v;
 		}
 	}
-	Document::Layer layer;
+	Document::Layer layer(image.width(), image.height());
 	layer.image() = image;
 	layer.offset() = QPoint(x0, y0);
 	applyBrush(layer, update);

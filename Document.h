@@ -24,26 +24,61 @@ public:
 				return image_.format() == QImage::Format_Grayscale8;
 			}
 		};
-		std::shared_ptr<Panel> panel;
+		using PanelPtr = std::shared_ptr<Panel>;
+		std::vector<PanelPtr> panels;
 
-		Layer()
+		int width_ = 0;
+		int height_ = 0;
+
+		PanelPtr addPanel()
 		{
-			panel = std::make_shared<Panel>();
+			auto panel = std::make_shared<Panel>();
+			panels.push_back(panel);
+			return panel;
+		}
+
+		Layer(int w = 0, int h = 0)
+			: width_(w)
+			, height_(h)
+		{
+			addPanel();
+		}
+
+		void create(int w, int h)
+		{
+			width_ = w;
+			height_ = h;
+			panels.clear();
+			for (int y = 0; y < h; y += 64) {
+				for (int x = 0; x < w; x += 64) {
+					auto panel = addPanel();
+					panel->image_ = QImage(64, 64, QImage::Format_RGBA8888);
+					panel->image_.fill(Qt::transparent);
+					panel->offset_ = QPoint(x, y);
+				}
+			}
 		}
 
 		int width() const
 		{
-			return panel ? panel->image_.width() : 0;
+			return width_;
 		}
 
 		int height() const
 		{
-			return panel ? panel->image_.height() : 0;
+			return height_;
+		}
+
+		QSize size() const
+		{
+			return QSize(width(), height());
 		}
 
 		void eachPanel(std::function<void(Panel *)> fn)
 		{
-			fn(panel.get());
+			for (PanelPtr &ptr : panels) {
+				fn(ptr.get());
+			}
 		}
 
 		bool isRGBA8888() const
@@ -58,20 +93,20 @@ public:
 
 		QImage &image()
 		{
-			return panel->image_;
+			return panels[0]->image_;
 		}
 		QPoint &offset()
 		{
-			return panel->offset_;
+			return panels[0]->offset_;
 		}
 
 		QImage const &image() const
 		{
-			return panel->image_;
+			return panels[0]->image_;
 		}
 		QPoint const &offset() const
 		{
-			return panel->offset_;
+			return panels[0]->offset_;
 		}
 	};
 
@@ -94,7 +129,8 @@ public:
 	QImage render(QRect const &r) const;
 private:
 	static void renderSelection(QImage *dstimg, const QRect &r, const QImage &selimg);
-	static QImage renderLayer(const QRect &r, Layer const &current_layer, const QImage &selection_layer);
+	static QImage renderLayer(const QRect &r, Layer const &current_layer, const QImage &selection);
+	static void blend_(const Layer::Panel *input_panel, const QColor &brush_color, Layer::Panel *target_panel, Layer *mask_layer);
 	static void blend_(const Layer &input_layer, const QColor &brush_color, Layer::Panel *target_panel, Layer *mask_layer);
 	static void renderMask(QImage *dstimg, const QRect &r, const QImage &selimg);
 public:

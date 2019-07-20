@@ -1,6 +1,7 @@
 #include "AlphaBlend.h"
 #include "Document.h"
 
+#include <QDebug>
 #include <QPainter>
 
 struct Document::Private {
@@ -57,14 +58,10 @@ void Document::blend(Layer const &input_layer, QColor const &brush_color, Layer 
 }
 
 
-void Document::blend_(Layer const &input_layer, QColor const &brush_color, Layer::Panel *target_panel, Layer *mask_layer)
+void Document::blend_(Layer::Panel const *input_panel, QColor const &brush_color, Layer::Panel *target_panel, Layer *mask_layer)
 {
-	if (mask_layer && mask_layer->image().isNull()) {
-		mask_layer = nullptr;
-	}
-
-	int x = input_layer.offset().x() - target_panel->offset_.x();
-	int y = input_layer.offset().y() - target_panel->offset_.y();
+	int x = input_panel->offset_.x() - target_panel->offset_.x();
+	int y = input_panel->offset_.y() - target_panel->offset_.y();
 
 	int w = target_panel->image_.width();
 	int h = target_panel->image_.height();
@@ -75,8 +72,8 @@ void Document::blend_(Layer const &input_layer, QColor const &brush_color, Layer
 	int dy1 = h;
 	int sx0 = x;
 	int sy0 = y;
-	int sx1 = x + input_layer.width();
-	int sy1 = y + input_layer.height();
+	int sx1 = x + input_panel->image_.width();
+	int sy1 = y + input_panel->image_.height();
 
 	if (dx0 > sx0) { sx0 = dx0; } else { dx0 = sx0; }
 	if (dx1 < sx1) { sx1 = dx1; } else { dx1 = sx1; }
@@ -88,7 +85,9 @@ void Document::blend_(Layer const &input_layer, QColor const &brush_color, Layer
 	w = sx1 - sx0;
 	h = sy1 - sy0;
 
-	QImage input_image = input_layer.image();
+	if (w < 1 || h < 1) return;
+
+	QImage input_image = input_panel->image_;
 
 	if (w > 0 && h > 0) {
 		uint8_t *tmpmask = nullptr;
@@ -156,10 +155,20 @@ void Document::blend_(Layer const &input_layer, QColor const &brush_color, Layer
 	}
 }
 
+void Document::blend_(Layer const &input_layer, QColor const &brush_color, Layer::Panel *target_panel, Layer *mask_layer)
+{
+	if (mask_layer && mask_layer->image().isNull()) {
+		mask_layer = nullptr;
+	}
+
+	for (Layer::PanelPtr const &input_panel : input_layer.panels) {
+		blend_(input_panel.get(), brush_color, target_panel, mask_layer);
+	}
+}
+
 void Document::paint(Layer const &sel, QColor const &brush_color)
 {
 	blend(sel, brush_color, &m->current_layer, selection_layer());
-//	blend(sel, brush_color, selection_layer(), nullptr);
 }
 void Document::renderSelection(QImage *dstimg, const QRect &r, QImage const &selimg)
 {
@@ -210,19 +219,27 @@ void Document::renderMask(QImage *dstimg, const QRect &r, QImage const &selimg)
 	pr.drawImage(0, 0, selimg, r.x(), r.y(), r.width(), r.height());
 }
 
-QImage Document::renderLayer(const QRect &r, const Layer &layer, QImage const &selection_)
+QImage Document::renderLayer(const QRect &r, const Layer &layer, QImage const &selection)
 {
 	QImage img;
 	if (!layer.image().isNull()) {
 		QRect r2 = r.translated(-layer.offset().x(), -layer.offset().y());
 		img = layer.image().copy(r2);
 
-		renderSelection(&img, r, selection_);
+		renderSelection(&img, r, selection);
 	}
 	return img;
 }
 
 QImage Document::render(const QRect &r) const
 {
+#if 0
 	return renderLayer(r, m->current_layer, m->selection_layer.image());
+#else
+	Layer::Panel panel;
+	panel.image_ = QImage(r.width(), r.height(), QImage::Format_RGBA8888);
+	panel.offset_ = r.topLeft();
+	blend_(*current_layer(), QColor(), &panel, nullptr);
+	return panel.image_;
+#endif
 }

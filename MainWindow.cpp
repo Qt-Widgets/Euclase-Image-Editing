@@ -309,18 +309,15 @@ void MainWindow::on_action_trim_triggered()
 	setImage(img, true);
 }
 
-void MainWindow::updateImageView()
+void MainWindow::updateImageView(bool force)
 {
-	ui->widget_image_view->update();
+	ui->widget_image_view->paintViewLater(force);
 }
 
 void MainWindow::applyBrush(Document::Layer const &layer, bool update)
 {
 	document()->paint(layer, foregroundColor());
-
-	if (update) {
-		updateImageView();
-	}
+	updateImageView(false);
 }
 
 void MainWindow::drawBrush(double x, double y, bool update)
@@ -364,6 +361,7 @@ void MainWindow::onPenUp(double x, double y)
 {
 	(void)x;
 	(void)y;
+	updateImageView(true);
 }
 
 void MainWindow::onMouseLeftButtonPress(int x, int y)
@@ -500,6 +498,6 @@ void MainWindow::test()
 		QPainter pr(&document()->current_layer()->image());
 		pr.drawPath(path);
 	}
-	updateImageView();
+	updateImageView(false);
 }
 

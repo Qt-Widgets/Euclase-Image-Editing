@@ -32,6 +32,7 @@ private:
 	void zoomToCenter(double scale);
 	void updateCursorAnchorPos();
 	void updateCenterAnchorPos();
+	void calcDestinationRect();
 protected:
 	void resizeEvent(QResizeEvent *) override;
 	void paintEvent(QPaintEvent *) override;
@@ -57,8 +58,11 @@ public:
 	void zoomOut();
 	static QImage filter_median_rgba8888(QImage srcimage);
 	static QImage filter_median_yuva64(QImage srcimage);
+	void paintViewLater(bool force);
 signals:
 	void scrollByWheel(int lines);
+private slots:
+	void onRenderingCompleted(const QImage &image);
 };
 
 #endif // IMAGEVIEWWIDGET_H

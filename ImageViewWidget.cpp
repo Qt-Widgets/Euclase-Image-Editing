@@ -7,6 +7,7 @@
 #include "charvec.h"
 #include "joinpath.h"
 #include "misc.h"
+#include "ImageViewRenderer.h"
 #include <QBuffer>
 #include <QDebug>
 #include <QElapsedTimer>
@@ -41,6 +42,10 @@ struct ImageViewWidget::Private {
 
 	bool left_button = false;
 
+	ImageViewRenderer *renderer;
+	QImage rendered_image;
+	QRect destination_rect;
+
 #ifndef APP_GUITAR
 	QPixmap transparent_pixmap;
 #endif
@@ -59,6 +64,9 @@ ImageViewWidget::ImageViewWidget(QWidget *parent)
 #endif
 
 	setContextMenuPolicy(Qt::DefaultContextMenu);
+
+	m->renderer = new ImageViewRenderer(this);
+	connect(m->renderer, &ImageViewRenderer::done, this, &ImageViewWidget::onRenderingCompleted);
 }
 
 ImageViewWidget::~ImageViewWidget()
@@ -92,7 +100,7 @@ void ImageViewWidget::internalScrollImage(double x, double y)
 	if (m->image_scroll_y < 0) m->image_scroll_y = 0;
 	if (m->image_scroll_x > sz.width()) m->image_scroll_x = sz.width();
 	if (m->image_scroll_y > sz.height()) m->image_scroll_y = sz.height();
-	update();
+	paintViewLater(false);
 }
 
 void ImageViewWidget::scrollImage(double x, double y)
@@ -126,7 +134,7 @@ void ImageViewWidget::clear()
 	m->mime_type = QString();
 	document()->current_layer()->image() = QImage();
 	setMouseTracking(false);
-	update();
+	paintViewLater(false);
 }
 
 
@@ -184,32 +192,56 @@ QSize ImageViewWidget::imageSize() const
 void ImageViewWidget::paintEvent(QPaintEvent *)
 {
 	QPainter pr(this);
+	int x = m->destination_rect.x();
+	int y = m->destination_rect.y();
+	int w = m->destination_rect.width();
+	int h = m->destination_rect.height();
+	if (w > 0 && h > 0) {
+		if (!m->rendered_image.isNull()) {
+			pr.drawImage(m->destination_rect, m->rendered_image, m->rendered_image.rect());
+		}
+	}
+	misc::drawFrame(&pr, (int)x - 1, (int)y - 1, (int)w + 2, (int)h + 2, Qt::black);
+}
+
+void ImageViewWidget::onRenderingCompleted(QImage const &image)
+{
+	m->rendered_image = image;
+	update();
+}
+
+void ImageViewWidget::calcDestinationRect()
+{
+	double cx = width() / 2.0;
+	double cy = height() / 2.0;
+	double x = cx - m->image_scroll_x;
+	double y = cy - m->image_scroll_y;
+	QSizeF sz = imageScrollRange();
+	m->destination_rect = QRect((int)x, (int)y, (int)sz.width(), (int)sz.height());
+}
+
+void ImageViewWidget::paintViewLater(bool force)
+{
+	calcDestinationRect();
+
+	if (force) {
+		m->renderer->wait();
+	} else {
+		if (m->renderer->isRunning()) return;
+	}
 
 	QSize imagesize = imageSize();
 	if (imagesize.width() > 0 && imagesize.height() > 0) {
-		pr.save();
-		double cx = width() / 2.0;
-		double cy = height() / 2.0;
-		double x = cx - m->image_scroll_x;
-		double y = cy - m->image_scroll_y;
-		QSizeF sz = imageScrollRange();
-		if (sz.width() > 0 && sz.height() > 0) {
-			QBrush br = getTransparentBackgroundBrush();
-			pr.setBrushOrigin((int)x, (int)y);
-			pr.fillRect((int)x, (int)y, (int)sz.width(), (int)sz.height(), br);
-			QImage img = mainwindow()->renderImage(QRect(0, 0, imagesize.width(), imagesize.height()));
-			if (!img.isNull()) {
-				pr.drawImage(QRect((int)x, (int)y, (int)sz.width(), (int)sz.height()), img, img.rect());
-			}
+		if (m->destination_rect.width() > 0 && m->destination_rect.height() > 0) {
+			m->renderer->request(mainwindow(), QRect(0, 0, imagesize.width(), imagesize.height()));
 		}
-		misc::drawFrame(&pr, (int)x - 1, (int)y - 1, (int)sz.width() + 2, (int)sz.height() + 2, Qt::black);
-		pr.restore();
 	}
 }
 
 void ImageViewWidget::resizeEvent(QResizeEvent *)
 {
 	updateScrollBarRange();
+	paintViewLater(false);
 }
 
 class ImageYUVA64 {
@@ -382,7 +414,7 @@ QImage ImageViewWidget::filter_median_yuva64(QImage srcimage)
 void ImageViewWidget::filter_median_rgba8888()
 {
 	document()->current_layer()->image() = filter_median_yuva64(document()->current_layer()->image());
-	update();
+	paintViewLater(false);
 }
 
 void ImageViewWidget::mousePressEvent(QMouseEvent *e)
@@ -482,7 +514,7 @@ void ImageViewWidget::zoomToCursor(double scale)
 
 	updateCenterAnchorPos();
 
-	update();
+	paintViewLater(false);
 }
 
 void ImageViewWidget::zoomToCenter(double scale)
@@ -496,7 +528,7 @@ void ImageViewWidget::zoomToCenter(double scale)
 
 	updateCursorAnchorPos();
 
-	update();
+	paintViewLater(false);
 }
 
 void ImageViewWidget::scale100()

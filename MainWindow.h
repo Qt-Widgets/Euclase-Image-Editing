@@ -28,7 +28,7 @@ private:
 	void setGreen(int value);
 	void setBlue(int value);
 	void test();
-	void updateImageView();
+	void updateImageView(bool force);
 protected:
 	void keyPressEvent(QKeyEvent *event);
 public:

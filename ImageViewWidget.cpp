@@ -123,7 +123,7 @@ void ImageViewWidget::refrectScrollBar()
 void ImageViewWidget::clear()
 {
 	m->mime_type = QString();
-	document()->current_layer()->image = QImage();
+	document()->current_layer()->image() = QImage();
 	setMouseTracking(false);
 	update();
 }
@@ -171,13 +171,13 @@ QBrush ImageViewWidget::getTransparentBackgroundBrush()
 
 bool ImageViewWidget::isValidImage() const
 {
-	return !document()->current_layer()->image.isNull();
+	return !document()->current_layer()->image().isNull();
 }
 
 QSize ImageViewWidget::imageSize() const
 {
-	if (!document()->current_layer()->image.isNull()) {
-		return document()->current_layer()->image.size();
+	if (!document()->current_layer()->image().isNull()) {
+		return document()->current_layer()->image().size();
 	}
 	return QSize();
 }
@@ -382,7 +382,7 @@ QImage ImageViewWidget::filter_median_yuva64(QImage srcimage)
 
 void ImageViewWidget::filter_median_rgba8888()
 {
-	document()->current_layer()->image = filter_median_yuva64(document()->current_layer()->image);
+	document()->current_layer()->image() = filter_median_yuva64(document()->current_layer()->image());
 	update();
 }
 

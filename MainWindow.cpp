@@ -117,13 +117,18 @@ Brush const &MainWindow::currentBrush() const
 
 void MainWindow::setImage(const QImage &image, bool fitview)
 {
-	document()->current_layer()->image = image.convertToFormat(QImage::Format_RGBA8888);
+	document()->current_layer()->image() = QImage(image.width(), image.height(), QImage::Format_RGBA8888);
+	document()->current_layer()->image().fill(Qt::transparent);
+	Document::Layer layer;
+	layer.image() = image;
+	document()->blend(layer, QColor(), document()->current_layer(), nullptr);
+
 	if (0) {
 		int w = documentWidth();
 		int h = documentHeight();
-		document()->selection_layer()->image = QImage(w, h, QImage::Format_Grayscale8);
-		document()->selection_layer()->image.fill(Qt::black);
-		QPainter pr(&document()->selection_layer()->image);
+		document()->selection_layer()->image() = QImage(w, h, QImage::Format_Grayscale8);
+		document()->selection_layer()->image().fill(Qt::black);
+		QPainter pr(&document()->selection_layer()->image());
 		pr.setRenderHint(QPainter::Antialiasing);
 		pr.setPen(Qt::NoPen);
 		pr.setBrush(Qt::white);
@@ -149,7 +154,7 @@ QImage MainWindow::renderImage(QRect const &r) const
 
 QRect MainWindow::selectionRect() const
 {
-	return document()->selection_layer()->image.rect();
+	return document()->selection_layer()->image().rect();
 }
 
 void MainWindow::fitView()
@@ -174,7 +179,7 @@ void MainWindow::onHueChanged(int hue)
 
 void MainWindow::on_action_resize_triggered()
 {
-	QImage srcimage = document()->current_layer()->image;
+	QImage srcimage = document()->current_layer()->image();
 	QSize sz = srcimage.size();
 
 	ResizeDialog dlg(this);
@@ -213,28 +218,28 @@ void MainWindow::on_action_file_save_as_triggered()
 {
 	QString path = QFileDialog::getSaveFileName(this);
 	if (!path.isEmpty()) {
-		QImage img = document()->current_layer()->image;
+		QImage img = document()->current_layer()->image();
 		img.save(path);
 	}
 }
 
 void MainWindow::on_action_filter_median_triggered()
 {
-	QImage image = document()->current_layer()->image;
+	QImage image = document()->current_layer()->image();
 	image = filter_median(image, 10);
 	setImage(image, false);
 }
 
 void MainWindow::on_action_filter_maximize_triggered()
 {
-	QImage image = document()->current_layer()->image;
+	QImage image = document()->current_layer()->image();
 	image = filter_maximize(image, 10);
 	setImage(image, false);
 }
 
 void MainWindow::on_action_filter_minimize_triggered()
 {
-	QImage image = document()->current_layer()->image;
+	QImage image = document()->current_layer()->image();
 	image = filter_minimize(image, 10);
 	setImage(image, false);
 }
@@ -243,7 +248,7 @@ QImage filter_blur(QImage image, int radius);
 
 void MainWindow::on_action_filter_blur_triggered()
 {
-	QImage image = document()->current_layer()->image;
+	QImage image = document()->current_layer()->image();
 	int radius = 10;
 	image = filter_blur(image, radius);
 	image = filter_blur(image, radius);
@@ -254,7 +259,7 @@ void MainWindow::on_action_filter_blur_triggered()
 
 void MainWindow::on_action_filter_antialias_triggered()
 {
-	QImage image = document()->current_layer()->image;
+	QImage image = document()->current_layer()->image();
 	filter_antialias(&image);
 	setImage(image, false);
 }
@@ -274,7 +279,7 @@ void MainWindow::on_verticalScrollBar_valueChanged(int value)
 
 void MainWindow::on_action_trim_triggered()
 {
-	QRect r_doc = document()->current_layer()->image.rect();
+	QRect r_doc = document()->current_layer()->image().rect();
 	QRect r_sel = selectionRect();
 	int sx0 = r_doc.x();
 	int sy0 = r_doc.y();
@@ -289,11 +294,11 @@ void MainWindow::on_action_trim_triggered()
 	if (sx1 < dx1) { dx1 -= dx1 - sx1; } else if (sx1 > dx1) { sx1 -= sx1 - dx1; }
 	if (sy1 < dy1) { dy1 -= dy1 - sy1; } else if (sy1 > dy1) { sy1 -= sy1 - dy1; }
 	QRect r(dx0, dy0, dx1 - dx0, dy1 - dy0);
-	QImage img = document()->current_layer()->image.copy(r);
+	QImage img = document()->current_layer()->image().copy(r);
 	{
 		int w = img.width();
 		int h = img.height();
-		document()->selection_layer()->image = QImage(w, h, QImage::Format_Grayscale8);
+		document()->selection_layer()->image() = QImage(w, h, QImage::Format_Grayscale8);
 	}
 	setImage(img, true);
 }
@@ -334,8 +339,8 @@ void MainWindow::drawBrush(double x, double y, bool update)
 		}
 	}
 	Document::Layer layer;
-	layer.image = image;
-	layer.offset = QPoint(x0, y0);
+	layer.image() = image;
+	layer.offset() = QPoint(x0, y0);
 	applyBrush(layer, update);
 }
 
@@ -485,7 +490,7 @@ void MainWindow::test()
 
 	}
 	{
-		QPainter pr(&document()->current_layer()->image);
+		QPainter pr(&document()->current_layer()->image());
 		pr.drawPath(path);
 	}
 	updateImageView();

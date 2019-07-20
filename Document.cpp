@@ -21,12 +21,12 @@ Document::~Document()
 
 int Document::width() const
 {
-	return m->current_layer.image.width();
+	return m->current_layer.width();
 }
 
 int Document::height() const
 {
-	return m->current_layer.image.height();
+	return m->current_layer.height();
 }
 
 Document::Layer *Document::current_layer()
@@ -49,22 +49,25 @@ Document::Layer *Document::selection_layer() const
 	return &m->selection_layer;
 }
 
-
-
 void Document::blend(Layer const &input_layer, QColor const &brush_color, Layer *target_layer, Layer *mask_layer)
 {
-	Q_ASSERT(input_layer.image.format() == QImage::Format_Grayscale8);
+	target_layer->eachPanel([&](Layer::Panel *panel){
+		blend_(input_layer, brush_color, panel, mask_layer);
+	});
+}
 
-	if (mask_layer && mask_layer->image.isNull()) {
+
+void Document::blend_(Layer const &input_layer, QColor const &brush_color, Layer::Panel *target_panel, Layer *mask_layer)
+{
+	if (mask_layer && mask_layer->image().isNull()) {
 		mask_layer = nullptr;
 	}
 
-	QImage const &selection = input_layer.image;
-	int x = input_layer.offset.x();
-	int y = input_layer.offset.y();
+	int x = input_layer.offset().x() - target_panel->offset_.x();
+	int y = input_layer.offset().y() - target_panel->offset_.y();
 
-	int w = target_layer->image.width();
-	int h = target_layer->image.height();
+	int w = target_panel->image_.width();
+	int h = target_panel->image_.height();
 
 	int dx0 = 0;
 	int dy0 = 0;
@@ -72,8 +75,8 @@ void Document::blend(Layer const &input_layer, QColor const &brush_color, Layer 
 	int dy1 = h;
 	int sx0 = x;
 	int sy0 = y;
-	int sx1 = x + selection.width();
-	int sy1 = y + selection.height();
+	int sx1 = x + input_layer.width();
+	int sy1 = y + input_layer.height();
 
 	if (dx0 > sx0) { sx0 = dx0; } else { dx0 = sx0; }
 	if (dx1 < sx1) { sx1 = dx1; } else { dx1 = sx1; }
@@ -85,43 +88,69 @@ void Document::blend(Layer const &input_layer, QColor const &brush_color, Layer 
 	w = sx1 - sx0;
 	h = sy1 - sy0;
 
+	QImage input_image = input_layer.image();
+
 	if (w > 0 && h > 0) {
 		uint8_t *tmpmask = nullptr;
 		QImage maskimg;
 		if (mask_layer) {
-			renderMask(&maskimg, QRect(dx0, dy0, dx1 - dx0, dy1 - dy0), mask_layer->image);
+			renderMask(&maskimg, QRect(dx0, dy0, dx1 - dx0, dy1 - dy0), mask_layer->image());
 		} else {
 			tmpmask = (uint8_t *)alloca(w);
 			memset(tmpmask, 255, w);
 		}
 
-		int opacity = 128;
+		if (input_image.format() == QImage::Format_Grayscale8) {
+			QImage const &selection = input_image;
 
-		QColor const &c = brush_color;
+			int opacity = 128;
 
-		if (target_layer->isRGBA8888()) {
-			euclase::PixelRGBA color(c.red(), c.green(), c.blue());
-			for (int i = 0; i < h; i++) {
-				using Pixel = euclase::PixelRGBA;
-				uint8_t const *m = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
-				uint8_t const *s = selection.scanLine(y + i);
-				Pixel *d = reinterpret_cast<Pixel *>(target_layer->image.scanLine(dy0 + i));
-				for (int j = 0; j < w; j++) {
-					color.a = opacity * s[x + j] * m[j] / (255 * 255);
-					d[dx0 + j] = AlphaBlend::blend_with_gamma_collection(d[dx0 + j], color);
+			QColor const &c = brush_color;
+
+			if (target_panel->isRGBA8888()) {
+				euclase::PixelRGBA color(c.red(), c.green(), c.blue());
+				for (int i = 0; i < h; i++) {
+					using Pixel = euclase::PixelRGBA;
+					uint8_t const *m = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
+					uint8_t const *s = selection.scanLine(y + i);
+					Pixel *d = reinterpret_cast<Pixel *>(target_panel->image_.scanLine(dy0 + i));
+					for (int j = 0; j < w; j++) {
+						color.a = opacity * s[x + j] * m[j] / (255 * 255);
+						d[dx0 + j] = AlphaBlend::blend_with_gamma_collection(d[dx0 + j], color);
+					}
+				}
+			} else if (target_panel->isGrayscale8()) {
+				euclase::PixelGrayA color(euclase::gray(c.red(), c.green(), c.blue()));
+				for (int i = 0; i < h; i++) {
+					using Pixel = euclase::PixelGrayA;
+					uint8_t const *m = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
+					uint8_t const *s = reinterpret_cast<uint8_t const *>(selection.scanLine(y + i));
+					uint8_t *d = reinterpret_cast<uint8_t *>(target_panel->image_.scanLine(dy0 + i));
+					for (int j = 0; j < w; j++) {
+						color.a = opacity * s[x + j] * m[j] / (255 * 255);
+						d[dx0 + j] = AlphaBlend::blend(Pixel(d[dx0 + j]), color).l;
+					}
 				}
 			}
-		} else if (target_layer->isGrayscale8()) {
-			euclase::PixelGrayA color(euclase::gray(c.red(), c.green(), c.blue()));
-			for (int i = 0; i < h; i++) {
-				using Pixel = euclase::PixelGrayA;
-				uint8_t const *m = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
-				uint8_t const *s = reinterpret_cast<uint8_t const *>(selection.scanLine(y + i));
-				uint8_t *d = reinterpret_cast<uint8_t *>(target_layer->image.scanLine(dy0 + i));
-				for (int j = 0; j < w; j++) {
-					color.a = opacity * s[x + j] * m[j] / (255 * 255);
-					d[dx0 + j] = AlphaBlend::blend(Pixel(d[dx0 + j]), color).l;
+			return;
+		}
+		if (input_image.format() == QImage::Format_RGB32) {
+			input_image = input_image.convertToFormat(QImage::Format_RGBA8888);
+		}
+		if (input_image.format() == QImage::Format_RGBA8888) {
+			if (target_panel->isRGBA8888()) {
+				for (int i = 0; i < h; i++) {
+					using Pixel = euclase::PixelRGBA;
+					uint8_t const *m = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
+					Pixel const *s = reinterpret_cast<Pixel const *>(input_image.scanLine(y + i));
+					Pixel *d = reinterpret_cast<Pixel *>(target_panel->image_.scanLine(dy0 + i));
+					for (int j = 0; j < w; j++) {
+						euclase::PixelRGBA color = s[x + j];
+						color.a = color.a * m[j] / 255;
+						d[dx0 + j] = AlphaBlend::blend_with_gamma_collection(d[dx0 + j], color);
+					}
 				}
+			} else if (target_panel->isGrayscale8()) {
 			}
 		}
 	}
@@ -184,9 +213,9 @@ void Document::renderMask(QImage *dstimg, const QRect &r, QImage const &selimg)
 QImage Document::renderLayer(const QRect &r, const Layer &layer, QImage const &selection_)
 {
 	QImage img;
-	if (!layer.image.isNull()) {
-		QRect r2 = r.translated(-layer.offset.x(), -layer.offset.y());
-		img = layer.image.copy(r2);
+	if (!layer.image().isNull()) {
+		QRect r2 = r.translated(-layer.offset().x(), -layer.offset().y());
+		img = layer.image().copy(r2);
 
 		renderSelection(&img, r, selection_);
 	}
@@ -195,5 +224,5 @@ QImage Document::renderLayer(const QRect &r, const Layer &layer, QImage const &s
 
 QImage Document::render(const QRect &r) const
 {
-	return renderLayer(r, m->current_layer, m->selection_layer.image);
+	return renderLayer(r, m->current_layer, m->selection_layer.image());
 }

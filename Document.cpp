@@ -50,15 +50,7 @@ Document::Layer *Document::selection_layer() const
 	return &m->selection_layer;
 }
 
-void Document::blend(Layer const &input_layer, QColor const &brush_color, Layer *target_layer, Layer *mask_layer)
-{
-	target_layer->eachPanel([&](Layer::Panel *panel){
-		blend_(input_layer, brush_color, panel, mask_layer);
-	});
-}
-
-
-void Document::blend_(Layer::Panel const *input_panel, QColor const &brush_color, Layer::Panel *target_panel, Layer *mask_layer)
+void Document::render(Layer::Panel *target_panel, Layer::Panel const *input_panel, Layer *mask_layer, QColor const &brush_color)
 {
 	int x = input_panel->offset_.x() - target_panel->offset_.x();
 	int y = input_panel->offset_.y() - target_panel->offset_.y();
@@ -155,21 +147,29 @@ void Document::blend_(Layer::Panel const *input_panel, QColor const &brush_color
 	}
 }
 
-void Document::blend_(Layer const &input_layer, QColor const &brush_color, Layer::Panel *target_panel, Layer *mask_layer)
+void Document::render(Layer *target_layer, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color)
+{
+	target_layer->eachPanel([&](Layer::Panel *panel){
+		render(input_layer, panel, mask_layer, brush_color);
+	});
+}
+
+void Document::render(Layer const &input_layer, Layer::Panel *target_panel, Layer *mask_layer, QColor const &brush_color)
 {
 	if (mask_layer && mask_layer->image().isNull()) {
 		mask_layer = nullptr;
 	}
 
 	for (Layer::PanelPtr const &input_panel : input_layer.panels) {
-		blend_(input_panel.get(), brush_color, target_panel, mask_layer);
+		render(target_panel, input_panel.get(), mask_layer, brush_color);
 	}
 }
 
 void Document::paint(Layer const &sel, QColor const &brush_color)
 {
-	blend(sel, brush_color, &m->current_layer, selection_layer());
+	render(&m->current_layer, sel, selection_layer(), brush_color);
 }
+
 void Document::renderSelection(QImage *dstimg, const QRect &r, QImage const &selimg)
 {
 	if (selimg.isNull()) return;
@@ -239,7 +239,7 @@ QImage Document::render(const QRect &r) const
 	Layer::Panel panel;
 	panel.image_ = QImage(r.width(), r.height(), QImage::Format_RGBA8888);
 	panel.offset_ = r.topLeft();
-	blend_(*current_layer(), QColor(), &panel, nullptr);
+	render(*current_layer(), &panel, nullptr, QColor());
 	return panel.image_;
 #endif
 }

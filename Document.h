@@ -130,11 +130,11 @@ public:
 private:
 	static void renderSelection(QImage *dstimg, const QRect &r, const QImage &selimg);
 	static QImage renderLayer(const QRect &r, Layer const &current_layer, const QImage &selection);
-	static void blend_(const Layer::Panel *input_panel, const QColor &brush_color, Layer::Panel *target_panel, Layer *mask_layer);
-	static void blend_(const Layer &input_layer, const QColor &brush_color, Layer::Panel *target_panel, Layer *mask_layer);
+	static void render(Layer::Panel *target_panel, const Layer::Panel *input_panel, Layer *mask_layer, const QColor &brush_color);
+	static void render(const Layer &input_layer, Layer::Panel *target_panel, Layer *mask_layer, const QColor &brush_color);
 	static void renderMask(QImage *dstimg, const QRect &r, const QImage &selimg);
 public:
-	static void blend(const Layer &input_layer, const QColor &brush_color, Layer *target_layer, Layer *mask_layer);
+	static void render(Layer *target_layer, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color);
 };
 
 #endif // DOCUMENT_H

@@ -126,7 +126,7 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 
 	Document::Layer layer(w, h);
 	layer.image() = image;
-	document()->blend(layer, QColor(), document()->current_layer(), nullptr);
+	document()->render(document()->current_layer(), layer, nullptr, QColor());
 
 	if (0) {
 		int w = documentWidth();

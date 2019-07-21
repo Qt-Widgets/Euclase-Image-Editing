@@ -116,8 +116,14 @@ void BrushPreviewWidget::setBrushSoftness(double v)
 
 void BrushPreviewWidget::setBrush(Brush const &b)
 {
-	brush_ = b;
+	setBrush_(b);
 	changeBrush();
+}
+
+void BrushPreviewWidget::setBrush_(Brush const &b)
+{
+	brush_ = b;
+	update();
 }
 
 #if USE_OPENCL

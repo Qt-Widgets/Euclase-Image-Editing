@@ -9,14 +9,20 @@ ImageViewRenderer::ImageViewRenderer(QObject *parent)
 
 void ImageViewRenderer::run()
 {
-	QImage image = mainwindow_->renderImage(rect_);
-	emit done(image);
+	while (requested_) {
+		requested_ = false;
+		QImage image = mainwindow_->renderImage(rect_);
+		emit done(image);
+	}
 }
 
 void ImageViewRenderer::request(MainWindow *mw, const QRect &rect)
 {
 	mainwindow_ = mw;
 	rect_ = rect;
-	start();
+	requested_ = true;
+	if (!isRunning()) {
+		start();
+	}
 }
 

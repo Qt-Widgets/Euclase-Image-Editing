@@ -25,6 +25,7 @@ public:
 	void setBrushSize(double v);
 	void setBrushSoftness(double percent);
 	void setBrush(const Brush &b);
+	void setBrush_(const Brush &b);
 protected:
 	void paintEvent(QPaintEvent *);
 };

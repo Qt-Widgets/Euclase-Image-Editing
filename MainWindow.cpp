@@ -18,6 +18,11 @@ struct MainWindow::Private {
 	Document doc;
 	QColor foreground_color;
 	Brush current_brush;
+
+	double brush_next_distance = 0;
+	double brush_span = 4;
+	double brush_t = 0;
+	QPointF brush_bezier[4];
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -41,7 +46,7 @@ MainWindow::MainWindow(QWidget *parent)
 		Brush b;
 		b.size = 85;
 		b.softness = 1.0;
-		ui->widget_brush->setBrush(b);
+		setCurrentBrush(b);
 	}
 }
 
@@ -101,8 +106,12 @@ QColor MainWindow::foregroundColor() const
 void MainWindow::setCurrentBrush(const Brush &brush)
 {
 	m->current_brush = brush;
+	m->brush_span = std::max(brush.size / 8.0, 0.5);
+
 	bool f1 = ui->horizontalSlider_size->blockSignals(true);
 	bool f2 = ui->horizontalSlider_softness->blockSignals(true);
+
+	ui->widget_brush->setBrush_(brush);
 
 	ui->horizontalSlider_size->setValue(brush.size);
 	ui->horizontalSlider_softness->setValue(brush.softness * 100);
@@ -314,47 +323,86 @@ void MainWindow::updateImageView(bool force)
 	ui->widget_image_view->paintViewLater(force);
 }
 
-void MainWindow::applyBrush(Document::Layer const &layer, bool update)
+void MainWindow::applyBrush(Document::Layer const &layer)
 {
 	document()->paint(layer, foregroundColor());
-	updateImageView(false);
 }
 
-void MainWindow::drawBrush(double x, double y, bool update)
+void MainWindow::drawBrush()
 {
-	RoundBrushGenerator brush(currentBrush().size, currentBrush().softness);
-	int x0 = floor(x - currentBrush().size / 2.0);
-	int y0 = floor(y - currentBrush().size / 2.0);
-	int x1 = ceil(x + currentBrush().size / 2.0);
-	int y1 = ceil(y + currentBrush().size / 2.0);
-	int w = x1 - x0;
-	int h = y1 - y0;
-	QImage image(w, h, QImage::Format_Grayscale8);
-	image.fill(Qt::black);
-	for (int i = 0; i < h; i++) {
-		uint8_t *dst = reinterpret_cast<uint8_t *>(image.scanLine(i));
-		for (int j = 0; j < w; j++) {
-			double tx = x0 + j - x + 0.5;
-			double ty = y0 + i - y + 0.5;
-			double value = brush.level(tx, ty);
-			int v = (int)(value  * 255);
-			dst[j] = v;
+	auto Put = [&](QPointF const &pt){
+		RoundBrushGenerator brush(currentBrush().size, currentBrush().softness);
+		int x0 = floor(pt.x() - currentBrush().size / 2.0);
+		int y0 = floor(pt.y() - currentBrush().size / 2.0);
+		int x1 = ceil(pt.x() + currentBrush().size / 2.0);
+		int y1 = ceil(pt.y() + currentBrush().size / 2.0);
+		int w = x1 - x0;
+		int h = y1 - y0;
+		QImage image(w, h, QImage::Format_Grayscale8);
+		image.fill(Qt::black);
+		for (int i = 0; i < h; i++) {
+			uint8_t *dst = reinterpret_cast<uint8_t *>(image.scanLine(i));
+			for (int j = 0; j < w; j++) {
+				double tx = x0 + j - pt.x() + 0.5;
+				double ty = y0 + i - pt.y() + 0.5;
+				double value = brush.level(tx, ty);
+				int v = (int)(value  * 255);
+				dst[j] = v;
+			}
 		}
-	}
-	Document::Layer layer(image.width(), image.height());
-	layer.image() = image;
-	layer.offset() = QPoint(x0, y0);
-	applyBrush(layer, update);
+		Document::Layer layer(image.width(), image.height());
+		layer.image() = image;
+		layer.offset() = QPoint(x0, y0);
+		applyBrush(layer);
+	};
+
+	QPointF pt0 = euclase::cubicBezierPoint(m->brush_bezier[0], m->brush_bezier[1], m->brush_bezier[2], m->brush_bezier[3], m->brush_t);
+	do {
+		if (m->brush_next_distance == 0) {
+			Put(pt0);
+			m->brush_next_distance = m->brush_span;
+		}
+		double t = std::min(m->brush_t + (1.0 / 16), 1.0);
+		QPointF pt1 = euclase::cubicBezierPoint(m->brush_bezier[0], m->brush_bezier[1], m->brush_bezier[2], m->brush_bezier[3], t);
+		double dx = pt0.x() - pt1.x();
+		double dy = pt0.y() - pt1.y();
+		double d = hypot(dx, dy);
+		if (m->brush_next_distance > d) {
+			m->brush_next_distance -= d;
+			m->brush_t = t;
+		} else {
+			m->brush_t += (t - m->brush_t) * m->brush_next_distance / d;
+			m->brush_next_distance = 0;
+		}
+		pt0 = pt1;
+	} while (m->brush_t < 1.0);
+
+	m->brush_t = 0;
+
+
+	updateImageView(false);
 }
 
 void MainWindow::onPenDown(double x, double y)
 {
-	drawBrush(x, y, true);
+	m->brush_bezier[0] = m->brush_bezier[1] = m->brush_bezier[2] = m->brush_bezier[3] = QPointF(x, y);
+	m->brush_next_distance = 0;
+	m->brush_t = 0;
+	drawBrush();
 }
 
 void MainWindow::onPenStroke(double x, double y)
 {
-	drawBrush(x, y, true);
+	m->brush_bezier[0] = m->brush_bezier[3];
+	m->brush_bezier[3] = QPointF(x, y);
+	x = (m->brush_bezier[0].x() * 2 + m->brush_bezier[3].x()) / 3;
+	y = (m->brush_bezier[0].y() * 2 + m->brush_bezier[3].y()) / 3;
+	m->brush_bezier[1] = QPointF(x, y);
+	x = (m->brush_bezier[0].x() + m->brush_bezier[3].x() * 2) / 3;
+	y = (m->brush_bezier[0].y() + m->brush_bezier[3].y() * 2) / 3;
+	m->brush_bezier[2] = QPointF(x, y);
+
+	drawBrush();
 }
 
 void MainWindow::onPenUp(double x, double y)
@@ -362,6 +410,7 @@ void MainWindow::onPenUp(double x, double y)
 	(void)x;
 	(void)y;
 	updateImageView(true);
+	m->brush_next_distance = 0;
 }
 
 void MainWindow::onMouseLeftButtonPress(int x, int y)
@@ -460,44 +509,5 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::test()
 {
-	QPointF p0 = {  50,  50 };
-	QPointF p1 = { 200, 400 };
-	QPointF p2 = { 300, 100 };
-	QPointF p3 = { 450, 450 };
-	QPointF q0;
-	QPointF q1;
-	QPointF q2;
-	QPointF q3;
-	QPainterPath path;
-	if (1) {
-		double x = p0.x();
-		double y = p0.y();
-		path.moveTo(x, y);
-		for (int i = 0; i < 100; i++) {
-			double t = (i + 1) / 100.0;
-			QPointF pt = euclase::cubicBezierPoint(p0, p1, p2, p3, t);
-			path.lineTo(pt.x(), pt.y());
-		}
-	}
-	euclase::cubicBezierSplit(&p0, &p1, &p2, &p3, &q0, &q1, &q2, &q3, 0.8);
-	setForegroundColor(Qt::blue);
-	for (int i = 0; i < 100; i++) {
-		double t = i / 100.0;
-		QPointF pt = euclase::cubicBezierPoint(p0, p1, p2, p3, t);
-		drawBrush(pt.x(), pt.y(), false);
-
-	}
-	setForegroundColor(Qt::green);
-	for (int i = 0; i < 100; i++) {
-		double t = i / 100.0;
-		QPointF pt = euclase::cubicBezierPoint(q0, q1, q2, q3, t);
-		drawBrush(pt.x(), pt.y(), false);
-
-	}
-	{
-		QPainter pr(&document()->current_layer()->image());
-		pr.drawPath(path);
-	}
-	updateImageView(false);
 }
 

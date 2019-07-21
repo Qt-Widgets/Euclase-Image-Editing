@@ -200,8 +200,8 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 		if (!m->rendered_image.isNull()) {
 			pr.drawImage(m->destination_rect, m->rendered_image, m->rendered_image.rect());
 		}
+		misc::drawFrame(&pr, (int)x - 1, (int)y - 1, (int)w + 2, (int)h + 2, Qt::black);
 	}
-	misc::drawFrame(&pr, (int)x - 1, (int)y - 1, (int)w + 2, (int)h + 2, Qt::black);
 }
 
 void ImageViewWidget::onRenderingCompleted(QImage const &image)
@@ -222,16 +222,9 @@ void ImageViewWidget::calcDestinationRect()
 
 void ImageViewWidget::paintViewLater(bool force)
 {
-	calcDestinationRect();
-
-	if (force) {
-		m->renderer->wait();
-	} else {
-		if (m->renderer->isRunning()) return;
-	}
-
 	QSize imagesize = imageSize();
 	if (imagesize.width() > 0 && imagesize.height() > 0) {
+		calcDestinationRect();
 		if (m->destination_rect.width() > 0 && m->destination_rect.height() > 0) {
 			m->renderer->request(mainwindow(), QRect(0, 0, imagesize.width(), imagesize.height()));
 		}

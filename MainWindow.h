@@ -22,8 +22,8 @@ private:
 	void setImage(const QImage &image, bool fitview);
 	void setImage(QByteArray const &ba);
 
-	void drawBrush(double x, double y, bool update);
-	void applyBrush(const Document::Layer &layer, bool update);
+	void drawBrush();
+	void applyBrush(const Document::Layer &layer);
 	void setRed(int value);
 	void setGreen(int value);
 	void setBlue(int value);

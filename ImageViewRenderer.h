@@ -10,6 +10,7 @@ class MainWindow;
 class ImageViewRenderer : public QThread {
 	Q_OBJECT
 private:
+	volatile bool requested_ = false;
 	MainWindow *mainwindow_;
 	QRect rect_;
 public:

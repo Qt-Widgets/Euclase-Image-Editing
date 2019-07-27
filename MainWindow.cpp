@@ -364,34 +364,31 @@ void MainWindow::drawBrush(bool one)
 	if (one) {
 		Put(pt0, currentBrush());
 		m->brush_next_distance = m->brush_span;
-		m->brush_t = 0;
-		return;
+	} else {
+		do {
+			if (m->brush_next_distance == 0) {
+				Put(pt0, currentBrush());
+				m->brush_next_distance = m->brush_span;
+			}
+			double t = std::min(m->brush_t + (1.0 / 16), 1.0);
+			QPointF pt1 = Point(t);
+			double dx = pt0.x() - pt1.x();
+			double dy = pt0.y() - pt1.y();
+			double d = hypot(dx, dy);
+			if (m->brush_next_distance > d) {
+				m->brush_next_distance -= d;
+				m->brush_t = t;
+				pt0 = pt1;
+			} else {
+				m->brush_t += (t - m->brush_t) * m->brush_next_distance / d;
+				m->brush_t = std::min(m->brush_t, 1.0);
+				m->brush_next_distance = 0;
+				pt0 = Point(m->brush_t);
+			}
+		} while (m->brush_t < 1.0);
 	}
 
-	do {
-		if (m->brush_next_distance == 0) {
-			Put(pt0, currentBrush());
-			m->brush_next_distance = m->brush_span;
-		}
-		double t = std::min(m->brush_t + (1.0 / 16), 1.0);
-		QPointF pt1 = Point(t);
-		double dx = pt0.x() - pt1.x();
-		double dy = pt0.y() - pt1.y();
-		double d = hypot(dx, dy);
-		if (m->brush_next_distance > d) {
-			m->brush_next_distance -= d;
-			m->brush_t = t;
-			pt0 = pt1;
-		} else {
-			m->brush_t += (t - m->brush_t) * m->brush_next_distance / d;
-			m->brush_t = std::min(m->brush_t, 1.0);
-			m->brush_next_distance = 0;
-			pt0 = Point(m->brush_t);
-		}
-	} while (m->brush_t < 1.0);
-
 	m->brush_t = 0;
-
 	updateImageView();
 }
 

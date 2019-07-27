@@ -22,7 +22,7 @@ private:
 	void setImage(const QImage &image, bool fitview);
 	void setImage(QByteArray const &ba);
 
-	void drawBrush();
+	void drawBrush(bool one);
 	void paintColor(const Document::Layer &layer);
 	void setRed(int value);
 	void setGreen(int value);

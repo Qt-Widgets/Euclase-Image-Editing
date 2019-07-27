@@ -328,14 +328,14 @@ void MainWindow::paintColor(Document::Layer const &layer)
 	document()->paint(layer, foregroundColor());
 }
 
-void MainWindow::drawBrush()
+void MainWindow::drawBrush(bool one)
 {
-	auto Put = [&](QPointF const &pt){
-		RoundBrushGenerator brush(currentBrush().size, currentBrush().softness);
-		int x0 = floor(pt.x() - currentBrush().size / 2.0);
-		int y0 = floor(pt.y() - currentBrush().size / 2.0);
-		int x1 = ceil(pt.x() + currentBrush().size / 2.0);
-		int y1 = ceil(pt.y() + currentBrush().size / 2.0);
+	auto Put = [&](QPointF const &pt, Brush const &brush){
+		RoundBrushGenerator shape(brush.size, brush.softness);
+		int x0 = floor(pt.x() - brush.size / 2.0);
+		int y0 = floor(pt.y() - brush.size / 2.0);
+		int x1 = ceil(pt.x() + brush.size / 2.0);
+		int y1 = ceil(pt.y() + brush.size / 2.0);
 		int w = x1 - x0;
 		int h = y1 - y0;
 		QImage image(w, h, QImage::Format_Grayscale8);
@@ -345,7 +345,7 @@ void MainWindow::drawBrush()
 			for (int j = 0; j < w; j++) {
 				double tx = x0 + j - pt.x() + 0.5;
 				double ty = y0 + i - pt.y() + 0.5;
-				double value = brush.level(tx, ty);
+				double value = shape.level(tx, ty);
 				int v = (int)(value  * 255);
 				dst[j] = v;
 			}
@@ -356,29 +356,41 @@ void MainWindow::drawBrush()
 		paintColor(layer);
 	};
 
-	QPointF pt0 = euclase::cubicBezierPoint(m->brush_bezier[0], m->brush_bezier[1], m->brush_bezier[2], m->brush_bezier[3], m->brush_t);
+	auto Point = [&](double t){
+		return euclase::cubicBezierPoint(m->brush_bezier[0], m->brush_bezier[1], m->brush_bezier[2], m->brush_bezier[3], t);
+	};
+
+	QPointF pt0 = Point(m->brush_t);
+	if (one) {
+		Put(pt0, currentBrush());
+		m->brush_next_distance = m->brush_span;
+		m->brush_t = 0;
+		return;
+	}
+
 	do {
 		if (m->brush_next_distance == 0) {
-			Put(pt0);
+			Put(pt0, currentBrush());
 			m->brush_next_distance = m->brush_span;
 		}
 		double t = std::min(m->brush_t + (1.0 / 16), 1.0);
-		QPointF pt1 = euclase::cubicBezierPoint(m->brush_bezier[0], m->brush_bezier[1], m->brush_bezier[2], m->brush_bezier[3], t);
+		QPointF pt1 = Point(t);
 		double dx = pt0.x() - pt1.x();
 		double dy = pt0.y() - pt1.y();
 		double d = hypot(dx, dy);
 		if (m->brush_next_distance > d) {
 			m->brush_next_distance -= d;
 			m->brush_t = t;
+			pt0 = pt1;
 		} else {
 			m->brush_t += (t - m->brush_t) * m->brush_next_distance / d;
+			m->brush_t = std::min(m->brush_t, 1.0);
 			m->brush_next_distance = 0;
+			pt0 = Point(m->brush_t);
 		}
-		pt0 = pt1;
 	} while (m->brush_t < 1.0);
 
 	m->brush_t = 0;
-
 
 	updateImageView();
 }
@@ -388,7 +400,7 @@ void MainWindow::onPenDown(double x, double y)
 	m->brush_bezier[0] = m->brush_bezier[1] = m->brush_bezier[2] = m->brush_bezier[3] = QPointF(x, y);
 	m->brush_next_distance = 0;
 	m->brush_t = 0;
-	drawBrush();
+	drawBrush(true);
 }
 
 void MainWindow::onPenStroke(double x, double y)
@@ -402,7 +414,7 @@ void MainWindow::onPenStroke(double x, double y)
 	y = (m->brush_bezier[0].y() + m->brush_bezier[3].y() * 2) / 3;
 	m->brush_bezier[2] = QPointF(x, y);
 
-	drawBrush();
+	drawBrush(false);
 }
 
 void MainWindow::onPenUp(double x, double y)

@@ -558,6 +558,7 @@ void ImageViewWidget::wheelEvent(QWheelEvent *e)
 //	double t = 1.003;//pow(sqrt(sqrt(2)), 1.0 / 60);
 	double t = 1.001;
 //	qDebug() << t;
+	qDebug() << Q_FUNC_INFO << d;
 	scale *= pow(t, d);
 #endif
 	zoomToCursor(m->image_scale * scale);

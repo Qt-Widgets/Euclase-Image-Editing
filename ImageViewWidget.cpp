@@ -100,7 +100,7 @@ void ImageViewWidget::internalScrollImage(double x, double y)
 	if (m->image_scroll_y < 0) m->image_scroll_y = 0;
 	if (m->image_scroll_x > sz.width()) m->image_scroll_x = sz.width();
 	if (m->image_scroll_y > sz.height()) m->image_scroll_y = sz.height();
-	paintViewLater(false);
+	paintViewLater();
 }
 
 void ImageViewWidget::scrollImage(double x, double y)
@@ -134,7 +134,7 @@ void ImageViewWidget::clear()
 	m->mime_type = QString();
 	document()->current_layer()->image() = QImage();
 	setMouseTracking(false);
-	paintViewLater(false);
+	paintViewLater();
 }
 
 
@@ -220,7 +220,7 @@ void ImageViewWidget::calcDestinationRect()
 	m->destination_rect = QRect((int)x, (int)y, (int)sz.width(), (int)sz.height());
 }
 
-void ImageViewWidget::paintViewLater(bool force)
+void ImageViewWidget::paintViewLater()
 {
 	QSize imagesize = imageSize();
 	if (imagesize.width() > 0 && imagesize.height() > 0) {
@@ -234,7 +234,7 @@ void ImageViewWidget::paintViewLater(bool force)
 void ImageViewWidget::resizeEvent(QResizeEvent *)
 {
 	updateScrollBarRange();
-	paintViewLater(false);
+	paintViewLater();
 }
 
 class ImageYUVA64 {
@@ -407,7 +407,7 @@ QImage ImageViewWidget::filter_median_yuva64(QImage srcimage)
 void ImageViewWidget::filter_median_rgba8888()
 {
 	document()->current_layer()->image() = filter_median_yuva64(document()->current_layer()->image());
-	paintViewLater(false);
+	paintViewLater();
 }
 
 void ImageViewWidget::mousePressEvent(QMouseEvent *e)
@@ -507,7 +507,7 @@ void ImageViewWidget::zoomToCursor(double scale)
 
 	updateCenterAnchorPos();
 
-	paintViewLater(false);
+	paintViewLater();
 }
 
 void ImageViewWidget::zoomToCenter(double scale)
@@ -521,7 +521,7 @@ void ImageViewWidget::zoomToCenter(double scale)
 
 	updateCursorAnchorPos();
 
-	paintViewLater(false);
+	paintViewLater();
 }
 
 void ImageViewWidget::scale100()

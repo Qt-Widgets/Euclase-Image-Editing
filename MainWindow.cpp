@@ -318,12 +318,12 @@ void MainWindow::on_action_trim_triggered()
 	setImage(img, true);
 }
 
-void MainWindow::updateImageView(bool force)
+void MainWindow::updateImageView()
 {
-	ui->widget_image_view->paintViewLater(force);
+	ui->widget_image_view->paintViewLater();
 }
 
-void MainWindow::applyBrush(Document::Layer const &layer)
+void MainWindow::paintColor(Document::Layer const &layer)
 {
 	document()->paint(layer, foregroundColor());
 }
@@ -353,7 +353,7 @@ void MainWindow::drawBrush()
 		Document::Layer layer(image.width(), image.height());
 		layer.image() = image;
 		layer.offset() = QPoint(x0, y0);
-		applyBrush(layer);
+		paintColor(layer);
 	};
 
 	QPointF pt0 = euclase::cubicBezierPoint(m->brush_bezier[0], m->brush_bezier[1], m->brush_bezier[2], m->brush_bezier[3], m->brush_t);
@@ -380,7 +380,7 @@ void MainWindow::drawBrush()
 	m->brush_t = 0;
 
 
-	updateImageView(false);
+	updateImageView();
 }
 
 void MainWindow::onPenDown(double x, double y)
@@ -409,7 +409,7 @@ void MainWindow::onPenUp(double x, double y)
 {
 	(void)x;
 	(void)y;
-	updateImageView(true);
+	updateImageView();
 	m->brush_next_distance = 0;
 }
 
@@ -509,5 +509,21 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::test()
 {
+	QImage image(100, 100, QImage::Format_Grayscale8);
+	image.fill(Qt::black);
+	{
+		QPainter pr(&image);
+		pr.setRenderHint(QPainter::Antialiasing);
+		pr.setPen(Qt::NoPen);
+		pr.setBrush(Qt::white);
+		pr.drawEllipse(0, 0, 99, 99);
+	}
+
+	Document::Layer layer(image.width(), image.height());
+	layer.image() = image;
+	layer.offset() = QPoint(14, 14);
+	paintColor(layer);
+
+	updateImageView();
 }
 

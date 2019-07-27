@@ -58,7 +58,7 @@ public:
 	void zoomOut();
 	static QImage filter_median_rgba8888(QImage srcimage);
 	static QImage filter_median_yuva64(QImage srcimage);
-	void paintViewLater(bool force);
+	void paintViewLater();
 signals:
 	void scrollByWheel(int lines);
 private slots:

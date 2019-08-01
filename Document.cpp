@@ -53,30 +53,31 @@ Document::Layer *Document::selection_layer() const
 
 void Document::render(Layer::Panel *target_panel, Layer::Panel const *input_panel, Layer const *mask_layer, QColor const &brush_color, int opacity)
 {
-	int x = input_panel->offset_.x() - target_panel->offset_.x();
-	int y = input_panel->offset_.y() - target_panel->offset_.y();
+	if (target_panel->offset_.x() == 64 && target_panel->offset_.y() == 64) {
+		qDebug();
+	}
 
-	int w = target_panel->image_.width();
-	int h = target_panel->image_.height();
+	int ox = input_panel->offset_.x() - target_panel->offset_.x();
+	int oy = input_panel->offset_.y() - target_panel->offset_.y();
 
 	int dx0 = 0;
 	int dy0 = 0;
-	int dx1 = w;
-	int dy1 = h;
-	int sx0 = x;
-	int sy0 = y;
-	int sx1 = x + input_panel->image_.width();
-	int sy1 = y + input_panel->image_.height();
+	int dx1 = target_panel->image_.width();
+	int dy1 = target_panel->image_.height();
+	int sx0 = ox;
+	int sy0 = oy;
+	int sx1 = ox + input_panel->image_.width();
+	int sy1 = oy + input_panel->image_.height();
 
 	if (dx0 > sx0) { sx0 = dx0; } else { dx0 = sx0; }
 	if (dx1 < sx1) { sx1 = dx1; } else { dx1 = sx1; }
 	if (dy0 > sy0) { sy0 = dy0; } else { dy0 = sy0; }
 	if (dy1 < sy1) { sy1 = dy1; } else { dy1 = sy1; }
 
-	x = sx0 - x;
-	y = sy0 - y;
-	w = sx1 - sx0;
-	h = sy1 - sy0;
+	int x = sx0 - ox;
+	int y = sy0 - oy;
+	int w = sx1 - sx0;
+	int h = sy1 - sy0;
 
 	if (w < 1 || h < 1) {
 //		qDebug() << "0";
@@ -94,7 +95,7 @@ void Document::render(Layer::Panel *target_panel, Layer::Panel const *input_pane
 			renderMask(&maskimg, QRect(sx0, sy0, sx1 - sx0, sy1 - sy0), mask_layer->image());
 #else
 			Layer::Panel panel;
-			panel.offset_ = QPoint(sx0, sy0);
+			panel.offset_ = QPoint(target_panel->offset_.x() + sx0, target_panel->offset_.y() + sy0);
 			panel.image_ = QImage(w, h, QImage::Format_Grayscale8);
 			panel.image_.fill(Qt::black);
 			render_(&panel, *mask_layer, nullptr, Qt::white);
@@ -249,7 +250,7 @@ QImage Document::render(const QRect &r) const
 	Layer::Panel panel;
 	panel.image_ = QImage(r.width(), r.height(), QImage::Format_RGBA8888);
 	panel.offset_ = r.topLeft();
-//	render_(&panel, *current_layer(), nullptr, QColor());
-	render_(&panel, *current_layer(), selection_layer(), QColor());
+	render_(&panel, *current_layer(), nullptr, QColor());
+//	render_(&panel, *current_layer(), selection_layer(), QColor());
 	return panel.image_;
 }

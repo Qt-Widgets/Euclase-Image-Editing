@@ -138,7 +138,7 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 	layer.image() = image;
 	document()->render(document()->current_layer(), layer, nullptr, QColor());
 
-	if (0) {
+	if (1) {
 		int w = documentWidth();
 		int h = documentHeight();
 		document()->selection_layer()->image() = QImage(w, h, QImage::Format_Grayscale8);
@@ -147,6 +147,7 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 		pr.setRenderHint(QPainter::Antialiasing);
 		pr.setPen(Qt::NoPen);
 		pr.setBrush(Qt::white);
+//		pr.drawEllipse(0, 0, 3, 3);
 		pr.drawEllipse(0, 0, w - 1, h - 1);
 	}
 	ui->widget_image_view->update();

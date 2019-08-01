@@ -54,8 +54,8 @@ struct PixelGrayA {
 		, a(0)
 	{
 	}
-	PixelGrayA(uint8_t y, uint8_t a = 255)
-		: l(y)
+	PixelGrayA(uint8_t l, uint8_t a = 255)
+		: l(l)
 		, a(a)
 	{
 	}

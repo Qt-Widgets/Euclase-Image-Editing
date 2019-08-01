@@ -124,14 +124,14 @@ public:
 	Layer *current_layer() const;
 	Layer *selection_layer() const;
 
-	void paint(const Layer &sel, const QColor &brush_color);
+	void paint(const Layer &source, const QColor &brush_color);
 
 	QImage render(QRect const &r) const;
 private:
 	static void renderSelection(QImage *dstimg, const QRect &r, const QImage &selimg);
 	static QImage renderLayer(const QRect &r, Layer const &current_layer, const QImage &selection);
 	static void render_(Layer::Panel *target_panel, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color);
-	static void render(Layer::Panel *target_panel, const Layer::Panel *input_panel, const Layer *mask_layer, const QColor &brush_color);
+	static void render(Layer::Panel *target_panel, const Layer::Panel *input_panel, const Layer *mask_layer, const QColor &brush_color, int opacity = 255);
 	static void renderMask(QImage *dstimg, const QRect &r, const QImage &selimg);
 public:
 	static void render(Layer *target_layer, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color);

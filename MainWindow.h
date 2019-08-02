@@ -24,11 +24,14 @@ private:
 
 	void drawBrush(bool one);
 	void paintColor(const Document::Layer &layer);
-	void setRed(int value);
-	void setGreen(int value);
-	void setBlue(int value);
 	void test();
 	void updateImageView();
+	void setColorRed(int value);
+	void setColorGreen(int value);
+	void setColorBlue(int value);
+	void setColorHue(int value);
+	void setColorSaturation(int value);
+	void setColorValue(int value);
 protected:
 	void keyPressEvent(QKeyEvent *event);
 public:
@@ -76,6 +79,12 @@ private slots:
 	void on_spinBox_rgb_r_valueChanged(int value);
 	void on_spinBox_rgb_g_valueChanged(int value);
 	void on_spinBox_rgb_b_valueChanged(int value);
+	void on_horizontalSlider_hsv_h_valueChanged(int value);
+	void on_horizontalSlider_hsv_s_valueChanged(int value);
+	void on_horizontalSlider_hsv_v_valueChanged(int value);
+	void on_spinBox_hsv_h_valueChanged(int value);
+	void on_spinBox_hsv_s_valueChanged(int value);
+	void on_spinBox_hsv_v_valueChanged(int value);
 };
 
 #endif // MAINWINDOW_H

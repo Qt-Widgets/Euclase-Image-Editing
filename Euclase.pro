@@ -32,7 +32,8 @@ SOURCES += main.cpp\
     Photoshop.cpp \
     charvec.cpp \
     joinpath.cpp \
-	resize.cpp
+	resize.cpp \
+    ColorSlider.cpp
 
 HEADERS  += MainWindow.h \
     AlphaBlend.h \
@@ -56,7 +57,8 @@ HEADERS  += MainWindow.h \
     Photoshop.h \
     charvec.h \
     joinpath.h \
-    resize.h
+    resize.h \
+    ColorSlider.h
 
 FORMS    += MainWindow.ui \
     ResizeDialog.ui

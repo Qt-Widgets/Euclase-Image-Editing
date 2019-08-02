@@ -9,6 +9,8 @@
 
 struct SaturationBrightnessWidget::Private {
 	int hue = 0;
+	int sat = 255;
+	int val = 255;
 	QImage image;
 	QRect rect;
 };
@@ -125,8 +127,9 @@ void SaturationBrightnessWidget::press(QPoint const &pos)
 	int y = pos.y() - m->rect.y();
 	x = std::max(0, std::min(x, m->image.width() - 1));
 	y = std::max(0, std::min(y, m->image.height() - 1));
-	QColor color(m->image.pixel(QPoint(x, y)));
-	mainwindow()->setForegroundColor(color);
+	m->sat = x * 255 / m->image.width();
+	m->val = 255 - y * 255 / m->image.height();
+	changeColor(QColor::fromHsv(m->hue, m->sat, m->val));
 }
 
 void SaturationBrightnessWidget::mousePressEvent(QMouseEvent *event)
@@ -153,7 +156,7 @@ void SaturationBrightnessWidget::setHue(int h)
 	}
 	m->hue = h;
 	updatePixmap(true);
-	changeColor(QColor::fromHsv(h, 255, 255));
+	changeColor(QColor::fromHsv(m->hue, m->sat, m->val));
 	update();
 }
 

@@ -36,6 +36,13 @@ MainWindow::MainWindow(QWidget *parent)
 	ui->widget_image_view->bind(this, ui->verticalScrollBar, ui->horizontalScrollBar);
 	ui->widget_image_view->setMouseTracking(true);
 
+	ui->horizontalSlider_rgb_r->setColorType(ColorSlider::RGB_R);
+	ui->horizontalSlider_rgb_g->setColorType(ColorSlider::RGB_G);
+	ui->horizontalSlider_rgb_b->setColorType(ColorSlider::RGB_B);
+	ui->horizontalSlider_hsv_h->setColorType(ColorSlider::HSV_H);
+	ui->horizontalSlider_hsv_s->setColorType(ColorSlider::HSV_S);
+	ui->horizontalSlider_hsv_v->setColorType(ColorSlider::HSV_V);
+
 	ui->tabWidget->setCurrentWidget(ui->tab_color_rgb);
 
 	connect(ui->widget_hue, SIGNAL(hueChanged(int)), this, SLOT(onHueChanged(int)));
@@ -81,21 +88,22 @@ int MainWindow::documentHeight() const
 void MainWindow::setForegroundColor(const QColor &color)
 {
 	m->foreground_color = color;
-	int r = color.red();
-	int g = color.green();
-	int b = color.blue();
 
-	auto Set = [](int v, QSlider *slider, QSpinBox *spin){
+	auto Set = [&](int v, ColorSlider *slider, QSpinBox *spin){
 		bool f1 = slider->blockSignals(true);
+		slider->setColor(m->foreground_color);
 		slider->setValue(v);
 		slider->blockSignals(f1);
 		bool f2 = spin->blockSignals(true);
 		spin->setValue(v);
 		spin->blockSignals(f2);
 	};
-	Set(r, ui->horizontalSlider_rgb_r, ui->spinBox_rgb_r);
-	Set(g, ui->horizontalSlider_rgb_g, ui->spinBox_rgb_g);
-	Set(b, ui->horizontalSlider_rgb_b, ui->spinBox_rgb_b);
+	Set(color.red(), ui->horizontalSlider_rgb_r, ui->spinBox_rgb_r);
+	Set(color.green(), ui->horizontalSlider_rgb_g, ui->spinBox_rgb_g);
+	Set(color.blue(), ui->horizontalSlider_rgb_b, ui->spinBox_rgb_b);
+	Set(color.hue(), ui->horizontalSlider_hsv_h, ui->spinBox_hsv_h);
+	Set(color.saturation(), ui->horizontalSlider_hsv_s, ui->spinBox_hsv_s);
+	Set(color.value(), ui->horizontalSlider_hsv_v, ui->spinBox_hsv_v);
 }
 
 QColor MainWindow::foregroundColor() const
@@ -449,61 +457,106 @@ void MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
 	}
 }
 
-void MainWindow::setRed(int value)
+void MainWindow::setColorRed(int value)
 {
 	QColor c = foregroundColor();
-	int r = value;
-	int g = c.green();
-	int b = c.blue();
-	setForegroundColor(QColor(r, g, b));
+	c = QColor(value, c.green(), c.blue());
+	setForegroundColor(c);
 }
 
-void MainWindow::setGreen(int value)
+void MainWindow::setColorGreen(int value)
 {
 	QColor c = foregroundColor();
-	int r = c.red();
-	int g = value;
-	int b = c.blue();
-	setForegroundColor(QColor(r, g, b));
+	c = QColor(c.red(), value, c.blue());
+	setForegroundColor(c);
 }
 
-void MainWindow::setBlue(int value)
+void MainWindow::setColorBlue(int value)
 {
 	QColor c = foregroundColor();
-	int r = c.red();
-	int g = c.green();
-	int b = value;
-	setForegroundColor(QColor(r, g, b));
+	c = QColor(c.red(), c.green(), value);
+	setForegroundColor(c);
+}
+
+void MainWindow::setColorHue(int value)
+{
+	QColor c = foregroundColor();
+	c = QColor::fromHsv(value, c.saturation(), c.value());
+	setForegroundColor(c);
+}
+
+void MainWindow::setColorSaturation(int value)
+{
+	QColor c = foregroundColor();
+	c = QColor::fromHsv(c.hue(), value, c.value());
+	setForegroundColor(c);
+}
+
+void MainWindow::setColorValue(int value)
+{
+	QColor c = foregroundColor();
+	c = QColor::fromHsv(c.hue(), c.saturation(), value);
+	setForegroundColor(c);
 }
 
 void MainWindow::on_horizontalSlider_rgb_r_valueChanged(int value)
 {
-	setRed(value);
+	setColorRed(value);
 }
 
 void MainWindow::on_horizontalSlider_rgb_g_valueChanged(int value)
 {
-	setGreen(value);
+	setColorGreen(value);
 }
 
 void MainWindow::on_horizontalSlider_rgb_b_valueChanged(int value)
 {
-	setBlue(value);
+	setColorBlue(value);
 }
 
 void MainWindow::on_spinBox_rgb_r_valueChanged(int value)
 {
-	setRed(value);
+	setColorRed(value);
 }
 
 void MainWindow::on_spinBox_rgb_g_valueChanged(int value)
 {
-	setGreen(value);
+	setColorGreen(value);
 }
 
 void MainWindow::on_spinBox_rgb_b_valueChanged(int value)
 {
-	setBlue(value);
+	setColorBlue(value);
+}
+
+void MainWindow::on_horizontalSlider_hsv_h_valueChanged(int value)
+{
+	setColorHue(value);
+}
+
+void MainWindow::on_horizontalSlider_hsv_s_valueChanged(int value)
+{
+	setColorSaturation(value);
+}
+
+void MainWindow::on_horizontalSlider_hsv_v_valueChanged(int value)
+{
+	setColorValue(value);
+}
+
+void MainWindow::on_spinBox_hsv_h_valueChanged(int value)
+{
+	setColorHue(value);
+}
+
+void MainWindow::on_spinBox_hsv_s_valueChanged(int value)
+{
+	setColorSaturation(value);
+}
+
+void MainWindow::on_spinBox_hsv_v_valueChanged(int value)
+{
+	setColorValue(value);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -536,4 +589,5 @@ void MainWindow::test()
 
 	updateImageView();
 }
+
 

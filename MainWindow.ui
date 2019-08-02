@@ -164,7 +164,7 @@
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QSlider" name="horizontalSlider_rgb_g">
+            <widget class="ColorSlider" name="horizontalSlider_rgb_g">
              <property name="maximum">
               <number>255</number>
              </property>
@@ -177,7 +177,7 @@
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QSlider" name="horizontalSlider_rgb_r">
+            <widget class="ColorSlider" name="horizontalSlider_rgb_r">
              <property name="maximum">
               <number>255</number>
              </property>
@@ -190,7 +190,7 @@
             </widget>
            </item>
            <item row="2" column="1">
-            <widget class="QSlider" name="horizontalSlider_rgb_b">
+            <widget class="ColorSlider" name="horizontalSlider_rgb_b">
              <property name="maximum">
               <number>255</number>
              </property>
@@ -264,21 +264,39 @@
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QSlider" name="horizontalSlider_hsv_h">
+            <widget class="ColorSlider" name="horizontalSlider_hsv_h">
+             <property name="maximum">
+              <number>359</number>
+             </property>
+             <property name="pageStep">
+              <number>10</number>
+             </property>
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QSlider" name="horizontalSlider_hsv_s">
+            <widget class="ColorSlider" name="horizontalSlider_hsv_s">
+             <property name="maximum">
+              <number>255</number>
+             </property>
+             <property name="pageStep">
+              <number>10</number>
+             </property>
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
            <item row="2" column="1">
-            <widget class="QSlider" name="horizontalSlider_hsv_v">
+            <widget class="ColorSlider" name="horizontalSlider_hsv_v">
+             <property name="maximum">
+              <number>255</number>
+             </property>
+             <property name="pageStep">
+              <number>10</number>
+             </property>
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -292,13 +310,25 @@
             </widget>
            </item>
            <item row="0" column="2">
-            <widget class="QSpinBox" name="spinBox_hsv_h"/>
+            <widget class="QSpinBox" name="spinBox_hsv_h">
+             <property name="maximum">
+              <number>359</number>
+             </property>
+            </widget>
            </item>
            <item row="1" column="2">
-            <widget class="QSpinBox" name="spinBox_hsv_s"/>
+            <widget class="QSpinBox" name="spinBox_hsv_s">
+             <property name="maximum">
+              <number>255</number>
+             </property>
+            </widget>
            </item>
            <item row="2" column="2">
-            <widget class="QSpinBox" name="spinBox_hsv_v"/>
+            <widget class="QSpinBox" name="spinBox_hsv_v">
+             <property name="maximum">
+              <number>255</number>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -456,7 +486,7 @@
      <x>0</x>
      <y>0</y>
      <width>743</width>
-     <height>18</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Edit">
@@ -570,6 +600,11 @@
    <extends>QWidget</extends>
    <header>ImageViewWidget.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ColorSlider</class>
+   <extends>QSlider</extends>
+   <header>ColorSlider.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

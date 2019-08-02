@@ -8,8 +8,14 @@
 HueWidget::HueWidget(QWidget *parent)
 	: QWidget(parent)
 {
-	hue = 0;
-	hue_add = 0;
+	hue_ = 0;
+}
+
+void HueWidget::setHue(int h)
+{
+	hue_ = h;
+	emit hueChanged(h);
+	update();
 }
 
 void HueWidget::paintEvent(QPaintEvent *)
@@ -18,22 +24,22 @@ void HueWidget::paintEvent(QPaintEvent *)
 	int h = height();
 	if (w > 6 && h > 0) {
 		QPainter pr(this);
-		if (image.height() != h) {
-			image = QImage(1, h, QImage::Format_ARGB32);
+		if (image_.height() != h) {
+			image_ = QImage(1, h, QImage::Format_ARGB32);
 			for (int i = 0; i < h; i++) {
 				QColor color = QColor::fromHsv(i * 360 / h, 255, 255);
-				QRgb *p = (QRgb *)image.scanLine(i);
+				QRgb *p = (QRgb *)image_.scanLine(i);
 				*p = qRgb(color.red(), color.green(), color.blue());
 			}
-			pixmap = QPixmap::fromImage(image);
+			pixmap_ = QPixmap::fromImage(image_);
 		}
-		if (pixmap.width() == 1 && pixmap.height() == h) {
+		if (pixmap_.width() == 1 && pixmap_.height() == h) {
 			pr.save();
 			pr.setClipRect(3, 1, w - 6, h - 2);
-			int y = -(hue + hue_add + 180) * h / 360;
+			int y = -(hue_ + 180) * h / 360;
 			while (y > 0) y -= h;
 			while (y < h) {
-				pr.drawPixmap(0, y, w, h, pixmap);
+				pr.drawPixmap(0, y, w, h, pixmap_);
 				y += h;
 			}
 			pr.restore();
@@ -57,22 +63,22 @@ MainWindow *HueWidget::mainwindow()
 
 void HueWidget::emit_hueChanged_()
 {
-	int h = hue + hue_add;
+	int h = hue_;
 	if (h < 0) {
 		h = 360 - (-h % 360);
 	} else {
 		h %= 360;
 	}
-	emit hueChanged(h);
-	update();
+	setHue(h);
 }
 
 void HueWidget::mousePressEvent(QMouseEvent *e)
 {
 	if (e->button() == Qt::LeftButton) {
+		hue_old_ = hue_;
 		QPoint pos = QCursor::pos();
 		pos = mapFromGlobal(pos);
-		press_pos = pos.y();
+		press_pos_ = pos.y();
 	}
 }
 
@@ -83,15 +89,13 @@ void HueWidget::mouseMoveEvent(QMouseEvent *e)
 		QPoint pos = QCursor::pos();
 		pos = mapFromGlobal(pos);
 
-		hue_add = (press_pos - pos.y()) * 360 / height();
+		hue_ = hue_old_ + (press_pos_ - pos.y()) * 360 / height();
 		emit_hueChanged_();
 	}
 }
 
 void HueWidget::mouseReleaseEvent(QMouseEvent *)
 {
-	hue += hue_add;
-	hue_add = 0;
 }
 
 void HueWidget::wheelEvent(QWheelEvent *e)
@@ -105,7 +109,7 @@ void HueWidget::wheelEvent(QWheelEvent *e)
 		delta /= 120;
 		if (delta == 0) delta = 1;
 	}
-	hue = (hue + delta + 360) % 360;
+	hue_ = (hue_ + delta + 360) % 360;
 	emit_hueChanged_();
 }
 
@@ -114,7 +118,7 @@ void HueWidget::mouseDoubleClickEvent(QMouseEvent *)
 	QPoint pos = QCursor::pos();
 	pos = mapFromGlobal(pos);
 
-	hue += (pos.y() - height() / 2) * 360 / height();
+	hue_ += (pos.y() - height() / 2) * 360 / height();
 	emit_hueChanged_();
 }
 

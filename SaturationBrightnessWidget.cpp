@@ -129,7 +129,7 @@ void SaturationBrightnessWidget::press(QPoint const &pos)
 	y = std::max(0, std::min(y, m->image.height() - 1));
 	m->sat = x * 255 / m->image.width();
 	m->val = 255 - y * 255 / m->image.height();
-	changeColor(QColor::fromHsv(m->hue, m->sat, m->val));
+	emit changeColor(QColor::fromHsv(m->hue, m->sat, m->val));
 }
 
 void SaturationBrightnessWidget::mousePressEvent(QMouseEvent *event)
@@ -142,11 +142,6 @@ void SaturationBrightnessWidget::mouseMoveEvent(QMouseEvent *event)
 	press(event->pos());
 }
 
-void SaturationBrightnessWidget::changeColor(QColor const &color)
-{
-	mainwindow()->setForegroundColor(color);
-}
-
 void SaturationBrightnessWidget::setHue(int h)
 {
 	if (h < 0) {
@@ -156,7 +151,7 @@ void SaturationBrightnessWidget::setHue(int h)
 	}
 	m->hue = h;
 	updatePixmap(true);
-	changeColor(QColor::fromHsv(m->hue, m->sat, m->val));
+	emit changeColor(QColor::fromHsv(m->hue, m->sat, m->val));
 	update();
 }
 

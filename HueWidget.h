@@ -8,17 +8,19 @@ class MainWindow;
 class HueWidget : public QWidget {
 	Q_OBJECT
 private:
-	int hue;
-	int hue_add;
-	int press_pos;
-	QImage image;
-	QPixmap pixmap;
+	int hue_;
+	int hue_old_;
+	int press_pos_;
+	QImage image_;
+	QPixmap pixmap_;
 
 	MainWindow *mainwindow();
 
 	void emit_hueChanged_();
 public:
 	explicit HueWidget(QWidget *parent = 0);
+
+	void setHue(int h);
 
 signals:
 
@@ -42,7 +44,7 @@ protected:
 protected:
 	void mouseDoubleClickEvent(QMouseEvent *);
 signals:
-	void hueChanged(int hue);
+	void hueChanged(int hue_);
 };
 
 #endif // HUEWIDGET_H

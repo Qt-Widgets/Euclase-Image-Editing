@@ -19,7 +19,6 @@ private:
 	MainWindow *mainwindow();
 	void updatePixmap(bool force);
 	QImage createImage(int w, int h);
-	void changeColor(const QColor &color);
 	void press(const QPoint &pos);
 protected:
 	void paintEvent(QPaintEvent *);
@@ -29,6 +28,9 @@ public:
 	explicit SaturationBrightnessWidget(QWidget *parent = 0);
 	~SaturationBrightnessWidget();
 	void setHue(int h);
+signals:
+	void changeColor(const QColor &color);
+
 };
 
 #endif // SATURATIONBRIGHTNESSWIDGET_H

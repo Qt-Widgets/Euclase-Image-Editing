@@ -45,7 +45,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 	ui->tabWidget->setCurrentWidget(ui->tab_color_rgb);
 
-	connect(ui->widget_hue, SIGNAL(hueChanged(int)), this, SLOT(onHueChanged(int)));
+	connect(ui->widget_hue, &HueWidget::hueChanged, this, &MainWindow::onHueChanged);
+	connect(ui->widget_color, &SaturationBrightnessWidget::changeColor, this, &MainWindow::setForegroundColor);
 
 	setForegroundColor(Qt::red);
 
@@ -104,6 +105,17 @@ void MainWindow::setForegroundColor(const QColor &color)
 	Set(color.hue(), ui->horizontalSlider_hsv_h, ui->spinBox_hsv_h);
 	Set(color.saturation(), ui->horizontalSlider_hsv_s, ui->spinBox_hsv_s);
 	Set(color.value(), ui->horizontalSlider_hsv_v, ui->spinBox_hsv_v);
+
+	{
+		bool f = ui->widget_hue->blockSignals(true);
+		ui->widget_hue->setHue(color.hue());
+		ui->widget_hue->blockSignals(f);
+	}
+	{
+		bool f = ui->widget_color->blockSignals(true);
+		ui->widget_color->setHue(color.hue());
+		ui->widget_color->blockSignals(f);
+	}
 }
 
 QColor MainWindow::foregroundColor() const

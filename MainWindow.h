@@ -13,6 +13,12 @@ class MainWindow;
 
 class MainWindow : public QMainWindow {
 	Q_OBJECT
+public:
+	enum class Tool {
+		Scroll,
+		Brush,
+		Rect,
+	};
 private:
 	Ui::MainWindow *ui;
 
@@ -32,6 +38,7 @@ private:
 	void setColorHue(int value);
 	void setColorSaturation(int value);
 	void setColorValue(int value);
+	QPointF pointOnDocument(int x, int y) const;
 protected:
 	void keyPressEvent(QKeyEvent *event);
 public:
@@ -49,15 +56,17 @@ public:
 	int documentHeight() const;
 	QColor foregroundColor() const;
 	const Brush &currentBrush() const;
+	void changeTool(Tool tool);
+	MainWindow::Tool currentTool() const;
 public slots:
 	void setForegroundColor(QColor const &color);
 	void setCurrentBrush(const Brush &brush);
 	void onPenDown(double x, double y);
 	void onPenStroke(double x, double y);
 	void onPenUp(double x, double y);
-	void onMouseLeftButtonPress(int x, int y);
-	void onMouseMove(int x, int y, bool leftbutton);
-	void onMouseLeftButtonRelase(int x, int y, bool leftbutton);
+	bool onMouseLeftButtonPress(int x, int y);
+	bool onMouseMove(int x, int y, bool leftbutton);
+	bool onMouseLeftButtonRelase(int x, int y, bool leftbutton);
 private slots:
 	void onHueChanged(int hue);
 	void on_action_file_open_triggered();
@@ -85,6 +94,9 @@ private slots:
 	void on_spinBox_hsv_h_valueChanged(int value);
 	void on_spinBox_hsv_s_valueChanged(int value);
 	void on_spinBox_hsv_v_valueChanged(int value);
+	void on_toolButton_scroll_clicked();
+	void on_toolButton_brush_clicked();
+	void on_toolButton_rect_clicked();
 };
 
 #endif // MAINWINDOW_H

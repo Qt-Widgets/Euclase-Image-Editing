@@ -23,6 +23,11 @@ struct MainWindow::Private {
 	double brush_span = 4;
 	double brush_t = 0;
 	QPointF brush_bezier[4];
+
+	MainWindow::Tool current_tool;
+
+	QPointF button_pressed_start_pt;
+	QPointF button_pressed_end_pt;
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -35,6 +40,11 @@ MainWindow::MainWindow(QWidget *parent)
 	ui->horizontalSlider_softness->setValue(0);
 	ui->widget_image_view->bind(this, ui->verticalScrollBar, ui->horizontalScrollBar);
 	ui->widget_image_view->setMouseTracking(true);
+
+	ui->toolButton_scroll->setCheckable(true);
+	ui->toolButton_brush->setCheckable(true);
+	ui->toolButton_rect->setCheckable(true);
+	ui->toolButton_scroll->click();
 
 	ui->horizontalSlider_rgb_r->setColorType(ColorSlider::RGB_R);
 	ui->horizontalSlider_rgb_g->setColorType(ColorSlider::RGB_G);
@@ -443,30 +453,74 @@ void MainWindow::onPenUp(double x, double y)
 	m->brush_next_distance = 0;
 }
 
-void MainWindow::onMouseLeftButtonPress(int x, int y)
+QPointF MainWindow::pointOnDocument(int x, int y) const
 {
 	QPointF pos(x + 0.5, y + 0.5);
-	pos = ui->widget_image_view->mapFromViewport(pos);
-	onPenDown(pos.x(), pos.y());
+	return ui->widget_image_view->mapFromViewport(pos);
 }
 
-void MainWindow::onMouseMove(int x, int y, bool leftbutton)
+bool MainWindow::onMouseLeftButtonPress(int x, int y)
 {
-	if (leftbutton) {
-		QPointF pos(x + 0.5, y + 0.5);
-		pos = ui->widget_image_view->mapFromViewport(pos);
-		onPenStroke(pos.x(), pos.y());
+	Tool tool = currentTool();
+	if (tool == Tool::Scroll) return false;
+
+	if (tool == Tool::Brush) {
+		QPointF pos = pointOnDocument(x, y);
+		onPenDown(pos.x(), pos.y());
+		return true;
 	}
+
+	if (tool == Tool::Rect) {
+		m->button_pressed_start_pt = pointOnDocument(x, y);
+		return true;
+	}
+
+	return false;
 }
 
-void MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
+bool MainWindow::onMouseMove(int x, int y, bool leftbutton)
 {
-	if (leftbutton) {
-		QPointF pos(x + 0.5, y + 0.5);
-		pos = ui->widget_image_view->mapFromViewport(pos);
-		onPenUp(pos.x(), pos.y());
-//		updateImageView();
+	Tool tool = currentTool();
+	if (tool == Tool::Scroll) return false;
+
+	if (tool == Tool::Brush) {
+		if (leftbutton) {
+			QPointF pos = pointOnDocument(x, y);
+			onPenStroke(pos.x(), pos.y());
+			return true;
+		}
 	}
+
+	if (tool == Tool::Rect) {
+		if (leftbutton) {
+			m->button_pressed_end_pt = pointOnDocument(x, y);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
+{
+	Tool tool = currentTool();
+	if (tool == Tool::Scroll) return false;
+
+	if (tool == Tool::Brush) {
+		if (leftbutton) {
+			QPointF pos = pointOnDocument(x, y);
+			onPenUp(pos.x(), pos.y());
+			return true;
+		}
+	}
+
+	if (tool == Tool::Rect) {
+		if (leftbutton) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void MainWindow::setColorRed(int value)
@@ -602,4 +656,44 @@ void MainWindow::test()
 	updateImageView();
 }
 
+void MainWindow::changeTool(Tool tool)
+{
+	m->current_tool = tool;
 
+	struct Button {
+		Tool tool;
+		QToolButton *button;
+	};
+
+	Button buttons[] = {
+		Tool::Scroll, ui->toolButton_scroll,
+		Tool::Brush, ui->toolButton_brush,
+		Tool::Rect, ui->toolButton_rect,
+	};
+
+	int n = sizeof(buttons) / sizeof(*buttons);
+	for (int i = 0; i < n; i++) {
+		bool f = (buttons[i].tool == m->current_tool);
+		buttons[i].button->setChecked(f);
+	}
+}
+
+MainWindow::Tool MainWindow::currentTool() const
+{
+	return m->current_tool;
+}
+
+void MainWindow::on_toolButton_scroll_clicked()
+{
+	changeTool(Tool::Scroll);
+}
+
+void MainWindow::on_toolButton_brush_clicked()
+{
+	changeTool(Tool::Brush);
+}
+
+void MainWindow::on_toolButton_rect_clicked()
+{
+	changeTool(Tool::Rect);
+}

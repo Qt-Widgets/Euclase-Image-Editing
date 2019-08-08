@@ -436,12 +436,10 @@ void ImageViewWidget::mouseMoveEvent(QMouseEvent *)
 	if (isValidImage()) {
 		QPoint pos = mapFromGlobal(QCursor::pos());
 		if (m->left_button && hasFocus()) {
-			if (0) {
+			if (!mainwindow()->onMouseMove(pos.x(), pos.y(), true)) {
 				int delta_x = pos.x() - m->mouse_press_pos.x();
 				int delta_y = pos.y() - m->mouse_press_pos.y();
 				scrollImage(m->scroll_origin_x - delta_x, m->scroll_origin_y - delta_y);
-			} else {
-				mainwindow()->onMouseMove(pos.x(), pos.y(), true);
 			}
 		}
 		m->cursor_anchor_pos = mapFromViewport(pos);

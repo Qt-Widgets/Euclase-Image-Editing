@@ -84,6 +84,11 @@ Document const *MainWindow::document() const
 	return &m->doc;
 }
 
+Synchronize *MainWindow::synchronizer()
+{
+	return ui->widget_image_view->synchronizer();
+}
+
 int MainWindow::documentWidth() const
 {
 	auto const *d = document();
@@ -166,7 +171,7 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 
 	Document::Layer layer(w, h);
 	layer.image() = image;
-	document()->renderToLayer(document()->current_layer(), layer, nullptr, QColor());
+	document()->renderToLayer(document()->current_layer(), layer, nullptr, QColor(), ui->widget_image_view->synchronizer());
 
 	if (1) {
 		int w = documentWidth();
@@ -181,21 +186,30 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 		pr.drawEllipse(0, 0, w - 1, h - 1);
 	}
 	ui->widget_image_view->update();
+
 	if (fitview) {
 		fitView();
+	} else {
+		updateImageView();
 	}
 }
 
-void MainWindow::setImage(QByteArray const &ba)
+void MainWindow::setImage(QByteArray const &ba, bool fitview)
 {
 	QImage image;
 	image.loadFromData(ba);
 	setImage(image, true);
+
+	if (fitview) {
+		fitView();
+	} else {
+		updateImageView();
+	}
 }
 
 QImage MainWindow::renderImage(QRect const &r, bool quickmask) const
 {
-	return document()->renderToLayer(r, quickmask);
+	return document()->renderToLayer(r, quickmask, ui->widget_image_view->synchronizer());
 }
 
 QRect MainWindow::selectionRect() const
@@ -249,9 +263,7 @@ void MainWindow::openFile(QString const &path)
 	if (file.open(QFile::ReadOnly)) {
 		ba = file.readAll();
 	}
-	setImage(ba);
-
-	fitView();
+	setImage(ba, true);
 }
 
 void MainWindow::on_action_file_open_triggered()
@@ -269,23 +281,30 @@ void MainWindow::on_action_file_save_as_triggered()
 	}
 }
 
+QImage MainWindow::renderFilterTargetImage()
+{
+	QSize sz = document()->current_layer()->size();
+	QImage image = renderImage(QRect(0, 0, sz.width(), sz.height()), false);
+	return image;
+}
+
 void MainWindow::on_action_filter_median_triggered()
 {
-	QImage image = document()->current_layer()->image();
+	QImage image = renderFilterTargetImage();
 	image = filter_median(image, 10);
 	setImage(image, false);
 }
 
 void MainWindow::on_action_filter_maximize_triggered()
 {
-	QImage image = document()->current_layer()->image();
+	QImage image = renderFilterTargetImage();
 	image = filter_maximize(image, 10);
 	setImage(image, false);
 }
 
 void MainWindow::on_action_filter_minimize_triggered()
 {
-	QImage image = document()->current_layer()->image();
+	QImage image = renderFilterTargetImage();
 	image = filter_minimize(image, 10);
 	setImage(image, false);
 }
@@ -294,7 +313,7 @@ QImage filter_blur(QImage image, int radius);
 
 void MainWindow::on_action_filter_blur_triggered()
 {
-	QImage image = document()->current_layer()->image();
+	QImage image = renderFilterTargetImage();
 	int radius = 10;
 	image = filter_blur(image, radius);
 	image = filter_blur(image, radius);
@@ -354,18 +373,26 @@ void MainWindow::updateImageView()
 	ui->widget_image_view->paintViewLater();
 }
 
-void MainWindow::paintColor(Operation op, Document::Layer const &layer)
+void MainWindow::updateSelection()
+{
+	ui->widget_image_view->clearSelectionOutline();
+	updateImageView();
+}
+
+void MainWindow::paintLayer(Operation op, Document::Layer const &layer)
 {
 	if (op == Operation::PaintToCurrentLayer) {
-		document()->paintToCurrentLayer(layer, foregroundColor());
+		document()->paintToCurrentLayer(layer, foregroundColor(), ui->widget_image_view->synchronizer());
 		return;
 	}
 	if (op == Operation::AddSelection) {
-		document()->addSelection(layer);
+		document()->addSelection(layer, ui->widget_image_view->synchronizer());
+		updateSelection();
 		return;
 	}
 	if (op == Operation::SubSelection) {
-		document()->subSelection(layer);
+		document()->subSelection(layer, ui->widget_image_view->synchronizer());
+		updateSelection();
 		return;
 	}
 }
@@ -395,7 +422,7 @@ void MainWindow::drawBrush(bool one)
 		Document::Layer layer(image.width(), image.height());
 		layer.image() = image;
 		layer.offset() = QPoint(x0, y0);
-		paintColor(Operation::PaintToCurrentLayer, layer);
+		paintLayer(Operation::PaintToCurrentLayer, layer);
 	};
 
 	auto Point = [&](double t){
@@ -546,7 +573,7 @@ bool MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
 			auto panel = layer.addPanel();
 			panel->offset_ = QPoint(x, y);
 			panel->image_ = image;
-			paintColor(Operation::SubSelection, layer);
+			paintLayer(Operation::SubSelection, layer);
 			updateImageView();
 			return true;
 		}
@@ -683,7 +710,7 @@ void MainWindow::test()
 	Document::Layer layer(image.width(), image.height());
 	layer.image() = image;
 	layer.offset() = QPoint(14, 14);
-	paintColor(Operation::PaintToCurrentLayer, layer);
+	paintLayer(Operation::PaintToCurrentLayer, layer);
 
 	updateImageView();
 }

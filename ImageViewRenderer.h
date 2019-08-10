@@ -15,7 +15,9 @@ private:
 	QRect rect_;
 public:
 	explicit ImageViewRenderer(QObject *parent = nullptr);
+	~ImageViewRenderer();
 	void request(MainWindow *mw, QRect const &rect);
+	void abort();
 protected:
 	void run();
 signals:

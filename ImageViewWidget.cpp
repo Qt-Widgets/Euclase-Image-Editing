@@ -28,6 +28,7 @@ struct ImageViewWidget::Private {
 	QScrollBar *v_scroll_bar = nullptr;
 	QScrollBar *h_scroll_bar = nullptr;
 	QString mime_type;
+	Synchronize sync;
 
 	double image_scroll_x = 0;
 	double image_scroll_y = 0;
@@ -54,6 +55,9 @@ struct ImageViewWidget::Private {
 	bool rect_visible = false;
 	QPointF rect_start;
 	QPointF rect_end;
+
+	QBitmap selection_outline;
+
 };
 
 ImageViewWidget::ImageViewWidget(QWidget *parent)
@@ -81,6 +85,11 @@ ImageViewWidget::~ImageViewWidget()
 	delete m;
 }
 
+Synchronize *ImageViewWidget::synchronizer()
+{
+	return &m->sync;
+}
+
 void ImageViewWidget::showRect(QPointF const &start, QPointF const &end)
 {
 	m->rect_start = start;
@@ -95,14 +104,14 @@ void ImageViewWidget::hideRect()
 	update();
 }
 
-QBrush ImageViewWidget::stripeBrush(bool pitch)
+QBrush ImageViewWidget::stripeBrush(bool blink)
 {
-	int mask = pitch ? 2 : 4;
+	int mask = blink ? 2 : 4;
 	int a = m->stripe_animation;
 	QImage image(8, 8, QImage::Format_Indexed8);
 	image.setColor(0, qRgb(0, 0, 0));
 	image.setColor(1, qRgb(255, 255, 255));
-	if (pitch) {
+	if (blink) {
 		uint8_t v = (a & 4) ? 1: 0;
 		for (int y = 0; y < 8; y++) {
 			uint8_t *p = image.scanLine(y);
@@ -238,6 +247,10 @@ QSize ImageViewWidget::imageSize() const
 
 void ImageViewWidget::paintEvent(QPaintEvent *)
 {
+	if (m->selection_outline.isNull()) {
+		updateSelection();
+	}
+
 	QPainter pr(this);
 	int x = m->destination_rect.x();
 	int y = m->destination_rect.y();
@@ -248,6 +261,15 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 			pr.drawImage(m->destination_rect, m->rendered_image, m->rendered_image.rect());
 		}
 		misc::drawFrame(&pr, (int)x - 1, (int)y - 1, (int)w + 2, (int)h + 2, Qt::black, Qt::black);
+	}
+
+	if (!m->selection_outline.isNull()) {
+		QBrush brush = stripeBrush(false);
+		pr.save();
+		pr.setClipRegion(QRegion(m->selection_outline).translated(m->destination_rect.topLeft()));
+		pr.setOpacity(0.5);
+		pr.fillRect(0, 0, width(), height(), brush);
+		pr.restore();
 	}
 
 	if (m->rect_visible) {
@@ -303,182 +325,20 @@ void ImageViewWidget::paintViewLater()
 	}
 }
 
+void ImageViewWidget::setSelectionOutline(const QBitmap &image)
+{
+	m->selection_outline = image;
+}
+
+void ImageViewWidget::clearSelectionOutline()
+{
+	m->selection_outline = QBitmap();
+}
+
 void ImageViewWidget::resizeEvent(QResizeEvent *)
 {
+	clearSelectionOutline();
 	updateScrollBarRange();
-	paintViewLater();
-}
-
-class ImageYUVA64 {
-public:
-	struct Pixel {
-		int16_t y, u, v, a;
-		Pixel(int16_t y = 0, int16_t u = 0, int16_t v = 0, int16_t a = 0)
-			: y(y), u(u), v(v), a(a)
-		{
-		}
-	};
-public:
-	static const int SCALE = 16;
-	int width_ = 0;
-	int height_ = 0;
-	QByteArray ba_;
-	ImageYUVA64() = default;
-	ImageYUVA64(int w, int h, QByteArray const &ba = QByteArray())
-		: width_(w)
-		, height_(h)
-		, ba_(ba)
-	{
-	}
-	ImageYUVA64 copy() const
-	{
-		return ImageYUVA64(width_, height_, ba_);
-	}
-	Pixel *scanLine(int y)
-	{
-		return (Pixel *)ba_.data() + width_ * y;
-	}
-	static ImageYUVA64 fromImage(QImage const &img)
-	{
-		ImageYUVA64 yuvimg;
-		int w = img.width();
-		int h = img.height();
-		if (w > 0 && h > 0) {
-			yuvimg.width_ = w;
-			yuvimg.height_ = h;
-			yuvimg.ba_.resize(w * h * 8);
-			QImage sourceimg = img.convertToFormat(QImage::Format_RGBA8888);
-			const int amp = 256 * SCALE - 1;
-			for (int y = 0; y < h; y++) {
-				uint8_t const *s = (uint8_t const *)sourceimg.scanLine(y);
-				Pixel *d = (Pixel *)yuvimg.ba_.data() + w * y;
-				for (int x = 0; x < w; x++) {
-					int R = s[x * 4 + 0];
-					int G = s[x * 4 + 1];
-					int B = s[x * 4 + 2];
-					int A = s[x * 4 + 3];
-					int Y = SCALE * (R * 16829 + G *  33039 + B *  6416) / 65536;
-					int U = SCALE * (R * -9714 + G * -19071 + B * 28784) / 65536 + 2048;
-					int V = SCALE * (R * 28784 + G * -24103 + B * -4681) / 65536 + 2048;
-					d[x].y = Y;
-					d[x].u = U;
-					d[x].v = V;
-					d[x].a = (A * 2 * amp / 255 + 1) / 2;
-				}
-			}
-		}
-		return yuvimg;
-	}
-	QImage toImage()
-	{
-		QImage newimage;
-		int w = width_;
-		int h = height_;
-		if (w > 0 && h > 0) {
-			newimage = QImage(w, h, QImage::Format_RGBA8888);
-			const int amp = 256 * SCALE - 1;
-			for (int y = 0; y < h; y++) {
-				for (int x = 0; x < w; x++) {
-					Pixel const *s = (Pixel *)ba_.data() + w * y;
-					uint8_t *d = (uint8_t *)newimage.scanLine(y);
-					int Y = s[x].y;
-					int U = s[x].u;
-					int V = s[x].v;
-					int A = s[x].a;
-					int R = (((Y) * 76309 +                       (V - 2048) * 104597) / 65536 + SCALE / 2) / SCALE;
-					int G = (((Y) * 76309 - (U - 2048) *  25675 - (V - 2048) *  53279) / 65536 + SCALE / 2) / SCALE;
-					int B = (((Y) * 76309 + (U - 2048) * 132201                      ) / 65536 + SCALE / 2) / SCALE;
-					d[x * 4 + 0] = R;
-					d[x * 4 + 1] = G;
-					d[x * 4 + 2] = B;
-					d[x * 4 + 3] = (A * 2 * 255 / amp + 1) / 2;
-				}
-			}
-		}
-		return newimage;
-	}
-	void filter()
-	{
-		if (width_ < 1 || height_ < 1) return;
-
-	}
-};
-
-QImage ImageViewWidget::filter_median_rgba8888(QImage srcimage)
-{
-	srcimage = srcimage.convertToFormat(QImage::Format_RGBA8888);
-	int w = srcimage.width();
-	int h = srcimage.height();
-	QImage newimage = srcimage.copy();
-	for (int y = 1; y + 1 < h; y++) {
-		for (int x = 1; x + 1 < w; x++) {
-			uint8_t r[9];
-			uint8_t g[9];
-			uint8_t b[9];
-			int n = 0;
-			for (int i = 0; i < 3; i++) {
-				for (int j = 0; j < 3; j++) {
-					uint8_t *s = srcimage.scanLine((y + i) - 1) + ((x + j) - 1) * 4;
-					if (s[3] != 0) {
-						r[i * 3 + j] = s[0];
-						g[i * 3 + j] = s[1];
-						b[i * 3 + j] = s[2];
-						n++;
-					}
-				}
-			}
-			std::sort(r, r + n);
-			std::sort(g, g + n);
-			std::sort(b, b + n);
-			uint8_t *d = newimage.scanLine(y) + x * 4;
-			d[0] = r[4];
-			d[1] = g[4];
-			d[2] = b[4];
-		}
-	}
-	return newimage;
-
-}
-
-QImage ImageViewWidget::filter_median_yuva64(QImage srcimage)
-{
-	srcimage = srcimage.convertToFormat(QImage::Format_RGBA8888);
-	ImageYUVA64 srcimage2 = ImageYUVA64::fromImage(srcimage);
-	int w = srcimage.width();
-	int h = srcimage.height();
-	ImageYUVA64 newimage = srcimage2.copy();
-	for (int y = 1; y + 1 < h; y++) {
-		for (int x = 1; x + 1 < w; x++) {
-			int Y[9];
-			int U[9];
-			int V[9];
-			int n = 0;
-			for (int i = 0; i < 3; i++) {
-				for (int j = 0; j < 3; j++) {
-					ImageYUVA64::Pixel const *s = srcimage2.scanLine((y + i) - 1) + ((x + j) - 1);
-					if (s->a != 0) {
-						Y[i * 3 + j] = s->y;
-						U[i * 3 + j] = s->u;
-						V[i * 3 + j] = s->v;
-						n++;
-					}
-				}
-			}
-			std::sort(Y, Y + n);
-			std::sort(U, U + n);
-			std::sort(V, V + n);
-			ImageYUVA64::Pixel *d = newimage.scanLine(y) + x;
-			d->y = Y[4];
-			d->u = U[4];
-			d->v = V[4];
-		}
-	}
-	return newimage.toImage();
-}
-
-void ImageViewWidget::filter_median_rgba8888()
-{
-	document()->current_layer()->image() = filter_median_yuva64(document()->current_layer()->image());
 	paintViewLater();
 }
 
@@ -541,6 +401,8 @@ void ImageViewWidget::mouseReleaseEvent(QMouseEvent *)
 
 void ImageViewWidget::setImageScale(double scale)
 {
+	clearSelectionOutline();
+
 	if (scale < 1 / 32.0) scale = 1 / 32.0;
 	if (scale > 32) scale = 32;
 	m->image_scale = scale;
@@ -641,6 +503,50 @@ void ImageViewWidget::wheelEvent(QWheelEvent *e)
 	scale *= pow(t, d);
 #endif
 	zoomToCursor(m->image_scale * scale);
+}
+
+void ImageViewWidget::updateSelection()
+{
+	QBitmap outline;
+	int dw = document()->width();
+	int dh = document()->height();
+	if (dw > 0 && dh > 0) {
+		QPointF vp0(0, 0);
+		QPointF vp1(dw, dh);
+		vp0 = mapToViewport(vp0);
+		vp1 = mapToViewport(vp1);
+		int vw = vp1.x() - vp0.x();
+		int vh = vp1.y() - vp0.y();
+		QPointF dp0 = mapFromViewport(vp0);
+		QPointF dp1 = mapFromViewport(vp1);
+		vp0 = QPointF(floor(vp0.x()), floor(vp0.y()));
+		vp1 = QPointF(floor(vp1.x()), floor(vp1.y()));
+		QImage selection;
+		{
+			int x = floor(dp0.x());
+			int y = floor(dp0.y());
+			int w = floor(dp1.x()) - x;
+			int h = floor(dp1.y()) - y;
+			selection = document()->renderSelection(QRect(x, y, w, h), &m->sync);
+			selection = selection.scaled(vw, vh);
+		}
+		if (selection.width() > 0 && selection.height() > 0) {
+			QImage image(vw, vh, QImage::Format_Grayscale8);
+			image.fill(Qt::black);
+			for (int y = 1; y + 1 < vh; y++) {
+				uint8_t const *s0 = selection.scanLine(y - 1);
+				uint8_t const *s1 = selection.scanLine(y);
+				uint8_t const *s2 = selection.scanLine(y + 1);
+				uint8_t *d = image.scanLine(y);
+				for (int x = 1; x + 1 < vw; x++) {
+					uint8_t v = ~(s0[x + 0] & s0[x + 1] & s0[x + 2] & s1[x + 0] & s1[x + 2] & s2[x + 0] & s2[x + 1] & s2[x + 2]) & s1[x + 1];
+					d[x] = (v & 0x80) ? 0 : 255;
+				}
+			}
+			outline = QBitmap::fromImage(image);
+		}
+	}
+	setSelectionOutline(outline);
 }
 
 

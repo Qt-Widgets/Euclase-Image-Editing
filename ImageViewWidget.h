@@ -33,7 +33,7 @@ private:
 	void updateCursorAnchorPos();
 	void updateCenterAnchorPos();
 	void calcDestinationRect();
-	QBrush stripeBrush(bool pitch);
+	QBrush stripeBrush(bool blink);
 protected:
 	void resizeEvent(QResizeEvent *) override;
 	void paintEvent(QPaintEvent *) override;
@@ -58,12 +58,17 @@ public:
 	void scale100();
 	QPointF mapFromViewport(const QPointF &pos);
 	QPointF mapToViewport(QPointF const &pos);
-	void filter_median_rgba8888();
+//	void filter_median_rgba8888();
 	void zoomIn();
 	void zoomOut();
-	static QImage filter_median_rgba8888(QImage srcimage);
-	static QImage filter_median_yuva64(QImage srcimage);
+//	static QImage filter_median_rgba8888(QImage srcimage);
+//	static QImage filter_median_yuva64(QImage srcimage);
 	void paintViewLater();
+
+	void setSelectionOutline(const QBitmap &image);
+	void clearSelectionOutline();
+	void updateSelection();
+	Synchronize *synchronizer();
 signals:
 	void scrollByWheel(int lines);
 private slots:

@@ -5,6 +5,13 @@
 #include <QPoint>
 #include <memory>
 #include <functional>
+#include <QMutex>
+
+class Synchronize {
+public:
+	QMutex mutex;
+	bool abort = false;
+};
 
 class Document {
 public:
@@ -132,19 +139,18 @@ public:
 	Layer *current_layer() const;
 	Layer *selection_layer() const;
 
-	void paintToCurrentLayer(const Layer &source, const QColor &brush_color);
+	void paintToCurrentLayer(const Layer &source, const QColor &brush_color, Synchronize *sync);
 
-	QImage renderToLayer(QRect const &r, bool quickmask) const;
+	QImage renderToLayer(QRect const &r, bool quickmask, Synchronize *sync) const;
 private:
-//	static void renderSelection(QImage *dstimg, const QRect &r, const QImage &selimg);
-//	static QImage renderLayer(const QRect &r, Layer const &current_layer, const QImage &selection);
-	static void renderToEachPanels(Layer::Panel *target_panel, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity = 255);
-	static void renderToSinglePanel(Layer::Panel *target_panel, const Layer::Panel *input_panel, const Layer *mask_layer, const QColor &brush_color, int opacity = 255);
-//	static void renderMask(QImage *dstimg, const QRect &r, const QImage &selimg);
+	static void renderToEachPanels_(Layer::Panel *target_panel, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, bool *abort);
+	static void renderToEachPanels(Layer::Panel *target_panel, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, Synchronize *sync);
+	static void renderToSinglePanel(Layer::Panel *target_panel, const Layer::Panel *input_panel, const Layer *mask_layer, const QColor &brush_color, int opacity = 255, bool *abort = nullptr);
 public:
-	static void renderToLayer(Layer *target_layer, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color);
-	void addSelection(const Layer &source);
-	void subSelection(const Layer &source);
+	static void renderToLayer(Layer *target_layer, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, Synchronize *sync);
+	void addSelection(const Layer &source, Synchronize *sync);
+	void subSelection(const Layer &source, Synchronize *sync);
+	QImage renderSelection(const QRect &r, Synchronize *sync) const;
 };
 
 #endif // DOCUMENT_H

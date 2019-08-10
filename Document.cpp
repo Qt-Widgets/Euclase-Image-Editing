@@ -51,7 +51,7 @@ Document::Layer *Document::selection_layer() const
 	return &m->selection_layer;
 }
 
-void Document::renderToSinglePanel(Layer::Panel *target_panel, Layer::Panel const *input_panel, Layer const *mask_layer, QColor const &brush_color, int opacity)
+void Document::renderToSinglePanel(Layer::Panel *target_panel, Layer::Panel const *input_panel, Layer const *mask_layer, QColor const &brush_color, int opacity, bool *abort)
 {
 	int ox = input_panel->offset_.x() - target_panel->offset_.x();
 	int oy = input_panel->offset_.y() - target_panel->offset_.y();
@@ -87,7 +87,7 @@ void Document::renderToSinglePanel(Layer::Panel *target_panel, Layer::Panel cons
 			panel.offset_ = QPoint(target_panel->offset_.x() + sx0, target_panel->offset_.y() + sy0);
 			panel.image_ = QImage(w, h, QImage::Format_Grayscale8);
 			panel.image_.fill(Qt::black);
-			renderToEachPanels(&panel, *mask_layer, nullptr, Qt::white);
+			renderToEachPanels_(&panel, *mask_layer, nullptr, Qt::white, 255, abort);
 			maskimg = panel.image_;
 		} else {
 			tmpmask = (uint8_t *)alloca(w);
@@ -97,7 +97,7 @@ void Document::renderToSinglePanel(Layer::Panel *target_panel, Layer::Panel cons
 		if (input_image.format() == QImage::Format_Grayscale8) {
 			QImage const &selection = input_image;
 
-			QColor const &c = brush_color;
+			QColor c = brush_color.isValid() ? brush_color : Qt::white;
 
 			uint8_t invert = 0;
 			if (opacity < 0) {
@@ -155,47 +155,70 @@ void Document::renderToSinglePanel(Layer::Panel *target_panel, Layer::Panel cons
 	}
 }
 
-void Document::renderToEachPanels(Layer::Panel *target_panel, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color, int opacity)
+void Document::renderToEachPanels_(Layer::Panel *target_panel, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color, int opacity, bool *abort)
 {
 	if (mask_layer && mask_layer->image().isNull()) {
 		mask_layer = nullptr;
 	}
-
 	for (Layer::PanelPtr const &input_panel : input_layer.panels) {
+		if (abort && *abort) return;
 		renderToSinglePanel(target_panel, input_panel.get(), mask_layer, brush_color, opacity);
 	}
 }
 
-void Document::renderToLayer(Layer *target_layer, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color)
+void Document::renderToEachPanels(Layer::Panel *target_panel, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color, int opacity, Synchronize *sync)
+{
+	if (sync) {
+		sync->mutex.lock();
+	}
+
+	renderToEachPanels_(target_panel, input_layer, mask_layer, brush_color, opacity, sync ? &sync->abort : nullptr);
+
+	if (sync) {
+		sync->mutex.unlock();
+	}
+}
+
+void Document::renderToLayer(Layer *target_layer, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color, Synchronize *sync)
 {
 	target_layer->eachPanel([&](Layer::Panel *panel){
-		renderToEachPanels(panel, input_layer, mask_layer, brush_color);
+		renderToEachPanels(panel, input_layer, mask_layer, brush_color, 255, sync);
 	});
 }
 
-void Document::paintToCurrentLayer(Layer const &source, QColor const &brush_color)
+void Document::paintToCurrentLayer(Layer const &source, QColor const &brush_color, Synchronize *sync)
 {
-	renderToLayer(&m->current_layer, source, selection_layer(), brush_color);
+	renderToLayer(&m->current_layer, source, selection_layer(), brush_color, sync);
 }
 
-void Document::addSelection(Layer const &source)
+void Document::addSelection(Layer const &source, Synchronize *sync)
 {
-	renderToLayer(selection_layer(), source, nullptr, Qt::white);
+	renderToLayer(selection_layer(), source, nullptr, Qt::white, sync);
 }
 
-void Document::subSelection(Layer const &source)
+void Document::subSelection(Layer const &source, Synchronize *sync)
 {
-	renderToLayer(selection_layer(), source, nullptr, Qt::black);
+	renderToLayer(selection_layer(), source, nullptr, Qt::black, sync);
 }
 
-QImage Document::renderToLayer(const QRect &r, bool quickmask) const
+QImage Document::renderSelection(const QRect &r, Synchronize *sync) const
+{
+	Layer::Panel panel;
+	panel.image_ = QImage(r.width(), r.height(), QImage::Format_Grayscale8);
+	panel.image_.fill(Qt::black);
+	panel.offset_ = r.topLeft();
+	renderToEachPanels(&panel, *selection_layer(), nullptr, QColor(), 255, sync);
+	return panel.image_;
+}
+
+QImage Document::renderToLayer(const QRect &r, bool quickmask, Synchronize *sync) const
 {
 	Layer::Panel panel;
 	panel.image_ = QImage(r.width(), r.height(), QImage::Format_RGBA8888);
 	panel.offset_ = r.topLeft();
-	renderToEachPanels(&panel, *current_layer(), nullptr, QColor());
+	renderToEachPanels(&panel, *current_layer(), nullptr, QColor(), 255, sync);
 	if (quickmask) {
-		renderToEachPanels(&panel, *selection_layer(), nullptr, QColor(255, 0, 0), -128);
+		renderToEachPanels(&panel, *selection_layer(), nullptr, QColor(255, 0, 0), -128, sync);
 	}
 	return panel.image_;
 }

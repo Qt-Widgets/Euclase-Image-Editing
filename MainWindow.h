@@ -26,14 +26,14 @@ private:
 	Private *m;
 
 	void setImage(const QImage &image, bool fitview);
-	void setImage(QByteArray const &ba);
+	void setImage(QByteArray const &ba, bool fitview);
 
 	enum class Operation {
 		PaintToCurrentLayer,
 		AddSelection,
 		SubSelection,
 	};
-	void paintColor(Operation op, const Document::Layer &layer);
+	void paintLayer(Operation op, const Document::Layer &layer);
 
 	void drawBrush(bool one);
 	void test();
@@ -45,6 +45,8 @@ private:
 	void setColorSaturation(int value);
 	void setColorValue(int value);
 	QPointF pointOnDocument(int x, int y) const;
+	QImage renderFilterTargetImage();
+	void updateSelection();
 protected:
 	void keyPressEvent(QKeyEvent *event);
 public:
@@ -53,6 +55,8 @@ public:
 
 	Document *document();
 	Document const *document() const;
+
+	Synchronize *synchronizer();
 
 	void fitView();
 	QImage renderImage(const QRect &r, bool quickmask) const;

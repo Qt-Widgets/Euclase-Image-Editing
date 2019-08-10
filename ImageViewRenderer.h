@@ -13,13 +13,14 @@ private:
 	volatile bool requested_ = false;
 	MainWindow *mainwindow_;
 	QRect rect_;
+	bool abort_ = false;
+protected:
+	void run();
 public:
 	explicit ImageViewRenderer(QObject *parent = nullptr);
 	~ImageViewRenderer();
 	void request(MainWindow *mw, QRect const &rect);
 	void abort();
-protected:
-	void run();
 signals:
 	void done(QImage const &image);
 };

@@ -2,8 +2,8 @@
 #include "MyApplication.h"
 #include "main.h"
 #include "MiraCL.h"
-
 #include "AlphaBlend.h"
+#include "SelectionOutlineRenderer.h"
 
 #include <QDebug>
 
@@ -14,6 +14,8 @@ int main(int argc, char *argv[])
 #if USE_OPENCL
 	getCL()->open();
 #endif
+
+	qRegisterMetaType<SelectionOutlineBitmap>("SelectionOutlineBitmap");
 
 	MainWindow w;
 	w.show();

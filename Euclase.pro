@@ -21,6 +21,7 @@ SOURCES += main.cpp\
     MyApplication.cpp \
     HueWidget.cpp \
     SaturationBrightnessWidget.cpp \
+	SelectionOutlineRenderer.cpp \
 	antialias.cpp \
 	euclase.cpp \
 	median.cpp \
@@ -42,6 +43,7 @@ HEADERS  += MainWindow.h \
     ImageViewRenderer.h \
     MiraCL.h \
     MyWidget.h \
+    SelectionOutlineRenderer.h \
     antialias.h \
     euclase.h \
     main.h \

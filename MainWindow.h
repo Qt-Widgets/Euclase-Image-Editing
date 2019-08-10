@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "Document.h"
+#include "SelectionOutlineRenderer.h"
 
 #include <QMainWindow>
 
@@ -38,6 +39,7 @@ private:
 	void drawBrush(bool one);
 	void test();
 	void updateImageView();
+	void updateSelectionOutline();
 	void setColorRed(int value);
 	void setColorGreen(int value);
 	void setColorBlue(int value);
@@ -46,7 +48,7 @@ private:
 	void setColorValue(int value);
 	QPointF pointOnDocument(int x, int y) const;
 	QImage renderFilterTargetImage();
-	void updateSelection();
+	void onSelectionChanged();
 protected:
 	void keyPressEvent(QKeyEvent *event);
 public:
@@ -59,7 +61,7 @@ public:
 	Synchronize *synchronizer();
 
 	void fitView();
-	QImage renderImage(const QRect &r, bool quickmask) const;
+	QImage renderImage(const QRect &r, bool quickmask, bool *abort) const;
 	QRect selectionRect() const;
 	void openFile(const QString &path);
 	int documentWidth() const;
@@ -68,6 +70,8 @@ public:
 	const Brush &currentBrush() const;
 	void changeTool(Tool tool);
 	MainWindow::Tool currentTool() const;
+	SelectionOutlineBitmap renderSelectionOutline(const QRect &r, bool *abort) const;
+	SelectionOutlineBitmap renderSelectionOutlineBitmap(bool *abort);
 public slots:
 	void setForegroundColor(QColor const &color);
 	void setCurrentBrush(const Brush &brush);

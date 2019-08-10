@@ -4,6 +4,7 @@
 #include <QScrollBar>
 #include <QWidget>
 #include "MainWindow.h"
+#include "SelectionOutlineRenderer.h"
 
 class Document;
 
@@ -22,9 +23,9 @@ private:
 	QSize imageSize() const;
 
 	QSizeF imageScrollRange() const;
-	void internalScrollImage(double x, double y);
-	void scrollImage(double x, double y);
-	void setImageScale(double scale);
+	void internalScrollImage(double x, double y, bool updateview);
+	void scrollImage(double x, double y, bool updateview);
+	void setImageScale(double scale, bool updateview);
 	QBrush getTransparentBackgroundBrush();
 	void setScrollBarRange(QScrollBar *h, QScrollBar *v);
 	void updateScrollBarRange();
@@ -56,25 +57,23 @@ public:
 
 	void scaleFit(double ratio = 1.0);
 	void scale100();
-	QPointF mapFromViewport(const QPointF &pos);
+	QPointF mapToDocument(const QPointF &pos);
 	QPointF mapToViewport(QPointF const &pos);
-//	void filter_median_rgba8888();
 	void zoomIn();
 	void zoomOut();
-//	static QImage filter_median_rgba8888(QImage srcimage);
-//	static QImage filter_median_yuva64(QImage srcimage);
-	void paintViewLater();
 
-	void setSelectionOutline(const QBitmap &image);
+	void paintViewLater(bool image, bool selection_outline);
+
+	void setSelectionOutline(SelectionOutlineBitmap const &data);
 	void clearSelectionOutline();
-	void updateSelection();
+	QBitmap updateSelection_();
 	Synchronize *synchronizer();
+	SelectionOutlineBitmap renderSelectionOutlineBitmap(bool *abort);
 signals:
 	void scrollByWheel(int lines);
 private slots:
 	void onRenderingCompleted(const QImage &image);
-
-	// QObject interface
+	void onSelectionOutlineRenderingCompleted(const SelectionOutlineBitmap &data);
 protected:
 	void timerEvent(QTimerEvent *event);
 };

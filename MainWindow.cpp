@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <QKeyEvent>
 #include <QDebug>
-#include <QElapsedTimer>
+#include <QBitmap>
 
 struct MainWindow::Private {
 	Document doc;
@@ -171,7 +171,7 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 
 	Document::Layer layer(w, h);
 	layer.image() = image;
-	document()->renderToLayer(document()->current_layer(), layer, nullptr, QColor(), ui->widget_image_view->synchronizer());
+	document()->renderToLayer(document()->current_layer(), layer, nullptr, QColor(), ui->widget_image_view->synchronizer(), nullptr);
 
 	if (1) {
 		int w = documentWidth();
@@ -192,24 +192,24 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 	} else {
 		updateImageView();
 	}
+	onSelectionChanged();
 }
 
 void MainWindow::setImage(QByteArray const &ba, bool fitview)
 {
 	QImage image;
 	image.loadFromData(ba);
-	setImage(image, true);
-
-	if (fitview) {
-		fitView();
-	} else {
-		updateImageView();
-	}
+	setImage(image, fitview);
 }
 
-QImage MainWindow::renderImage(QRect const &r, bool quickmask) const
+QImage MainWindow::renderImage(QRect const &r, bool quickmask, bool *abort) const
 {
-	return document()->renderToLayer(r, quickmask, ui->widget_image_view->synchronizer());
+	return document()->renderToLayer(r, quickmask, ui->widget_image_view->synchronizer(), abort);
+}
+
+SelectionOutlineBitmap MainWindow::renderSelectionOutline(QRect const &r, bool *abort) const
+{
+	return ui->widget_image_view->renderSelectionOutlineBitmap(abort);
 }
 
 QRect MainWindow::selectionRect() const
@@ -284,7 +284,7 @@ void MainWindow::on_action_file_save_as_triggered()
 QImage MainWindow::renderFilterTargetImage()
 {
 	QSize sz = document()->current_layer()->size();
-	QImage image = renderImage(QRect(0, 0, sz.width(), sz.height()), false);
+	QImage image = renderImage(QRect(0, 0, sz.width(), sz.height()), false, false);
 	return image;
 }
 
@@ -370,29 +370,33 @@ void MainWindow::on_action_trim_triggered()
 
 void MainWindow::updateImageView()
 {
-	ui->widget_image_view->paintViewLater();
+	ui->widget_image_view->paintViewLater(true, false);
 }
 
-void MainWindow::updateSelection()
+void MainWindow::updateSelectionOutline()
 {
-	ui->widget_image_view->clearSelectionOutline();
-	updateImageView();
+	ui->widget_image_view->paintViewLater(false, true);
+}
+
+void MainWindow::onSelectionChanged()
+{
+	updateSelectionOutline();
 }
 
 void MainWindow::paintLayer(Operation op, Document::Layer const &layer)
 {
 	if (op == Operation::PaintToCurrentLayer) {
-		document()->paintToCurrentLayer(layer, foregroundColor(), ui->widget_image_view->synchronizer());
+		document()->paintToCurrentLayer(layer, foregroundColor(), ui->widget_image_view->synchronizer(), nullptr);
 		return;
 	}
 	if (op == Operation::AddSelection) {
-		document()->addSelection(layer, ui->widget_image_view->synchronizer());
-		updateSelection();
+		document()->addSelection(layer, ui->widget_image_view->synchronizer(), nullptr);
+		onSelectionChanged();
 		return;
 	}
 	if (op == Operation::SubSelection) {
-		document()->subSelection(layer, ui->widget_image_view->synchronizer());
-		updateSelection();
+		document()->subSelection(layer, ui->widget_image_view->synchronizer(), nullptr);
+		onSelectionChanged();
 		return;
 	}
 }
@@ -494,7 +498,7 @@ void MainWindow::onPenUp(double x, double y)
 QPointF MainWindow::pointOnDocument(int x, int y) const
 {
 	QPointF pos(x + 0.5, y + 0.5);
-	return ui->widget_image_view->mapFromViewport(pos);
+	return ui->widget_image_view->mapToDocument(pos);
 }
 
 bool MainWindow::onMouseLeftButtonPress(int x, int y)
@@ -755,4 +759,9 @@ void MainWindow::on_toolButton_brush_clicked()
 void MainWindow::on_toolButton_rect_clicked()
 {
 	changeTool(Tool::Rect);
+}
+
+SelectionOutlineBitmap MainWindow::renderSelectionOutlineBitmap(bool *abort)
+{
+	return ui->widget_image_view->renderSelectionOutlineBitmap(abort);
 }

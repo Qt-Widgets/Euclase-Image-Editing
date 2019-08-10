@@ -10,7 +10,6 @@
 class Synchronize {
 public:
 	QMutex mutex;
-	bool abort = false;
 };
 
 class Document {
@@ -139,18 +138,18 @@ public:
 	Layer *current_layer() const;
 	Layer *selection_layer() const;
 
-	void paintToCurrentLayer(const Layer &source, const QColor &brush_color, Synchronize *sync);
+	void paintToCurrentLayer(const Layer &source, const QColor &brush_color, Synchronize *sync, bool *abort);
 
-	QImage renderToLayer(QRect const &r, bool quickmask, Synchronize *sync) const;
+	QImage renderToLayer(QRect const &r, bool quickmask, Synchronize *sync, bool *abort) const;
 private:
 	static void renderToEachPanels_(Layer::Panel *target_panel, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, bool *abort);
-	static void renderToEachPanels(Layer::Panel *target_panel, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, Synchronize *sync);
+	static void renderToEachPanels(Layer::Panel *target_panel, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, Synchronize *sync, bool *abort);
 	static void renderToSinglePanel(Layer::Panel *target_panel, const Layer::Panel *input_panel, const Layer *mask_layer, const QColor &brush_color, int opacity = 255, bool *abort = nullptr);
 public:
-	static void renderToLayer(Layer *target_layer, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, Synchronize *sync);
-	void addSelection(const Layer &source, Synchronize *sync);
-	void subSelection(const Layer &source, Synchronize *sync);
-	QImage renderSelection(const QRect &r, Synchronize *sync) const;
+	static void renderToLayer(Layer *target_layer, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, Synchronize *sync, bool *abort);
+	void addSelection(const Layer &source, Synchronize *sync, bool *abort);
+	void subSelection(const Layer &source, Synchronize *sync, bool *abort);
+	QImage renderSelection(const QRect &r, Synchronize *sync, bool *abort) const;
 };
 
 #endif // DOCUMENT_H

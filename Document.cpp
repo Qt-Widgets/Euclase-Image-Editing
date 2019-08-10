@@ -2,7 +2,6 @@
 #include "Document.h"
 
 #include <QDebug>
-#include <QElapsedTimer>
 #include <QPainter>
 
 struct Document::Private {
@@ -166,59 +165,59 @@ void Document::renderToEachPanels_(Layer::Panel *target_panel, Layer const &inpu
 	}
 }
 
-void Document::renderToEachPanels(Layer::Panel *target_panel, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color, int opacity, Synchronize *sync)
+void Document::renderToEachPanels(Layer::Panel *target_panel, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color, int opacity, Synchronize *sync, bool *abort)
 {
 	if (sync) {
 		sync->mutex.lock();
 	}
 
-	renderToEachPanels_(target_panel, input_layer, mask_layer, brush_color, opacity, sync ? &sync->abort : nullptr);
+	renderToEachPanels_(target_panel, input_layer, mask_layer, brush_color, opacity, abort);
 
 	if (sync) {
 		sync->mutex.unlock();
 	}
 }
 
-void Document::renderToLayer(Layer *target_layer, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color, Synchronize *sync)
+void Document::renderToLayer(Layer *target_layer, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color, Synchronize *sync, bool *abort)
 {
 	target_layer->eachPanel([&](Layer::Panel *panel){
-		renderToEachPanels(panel, input_layer, mask_layer, brush_color, 255, sync);
+		renderToEachPanels(panel, input_layer, mask_layer, brush_color, 255, sync, abort);
 	});
 }
 
-void Document::paintToCurrentLayer(Layer const &source, QColor const &brush_color, Synchronize *sync)
+void Document::paintToCurrentLayer(Layer const &source, QColor const &brush_color, Synchronize *sync, bool *abort)
 {
-	renderToLayer(&m->current_layer, source, selection_layer(), brush_color, sync);
+	renderToLayer(&m->current_layer, source, selection_layer(), brush_color, sync, abort);
 }
 
-void Document::addSelection(Layer const &source, Synchronize *sync)
+void Document::addSelection(Layer const &source, Synchronize *sync, bool *abort)
 {
-	renderToLayer(selection_layer(), source, nullptr, Qt::white, sync);
+	renderToLayer(selection_layer(), source, nullptr, Qt::white, sync, abort);
 }
 
-void Document::subSelection(Layer const &source, Synchronize *sync)
+void Document::subSelection(Layer const &source, Synchronize *sync, bool *abort)
 {
-	renderToLayer(selection_layer(), source, nullptr, Qt::black, sync);
+	renderToLayer(selection_layer(), source, nullptr, Qt::black, sync, abort);
 }
 
-QImage Document::renderSelection(const QRect &r, Synchronize *sync) const
+QImage Document::renderSelection(const QRect &r, Synchronize *sync, bool *abort) const
 {
 	Layer::Panel panel;
 	panel.image_ = QImage(r.width(), r.height(), QImage::Format_Grayscale8);
 	panel.image_.fill(Qt::black);
 	panel.offset_ = r.topLeft();
-	renderToEachPanels(&panel, *selection_layer(), nullptr, QColor(), 255, sync);
+	renderToEachPanels(&panel, *selection_layer(), nullptr, QColor(), 255, sync, abort);
 	return panel.image_;
 }
 
-QImage Document::renderToLayer(const QRect &r, bool quickmask, Synchronize *sync) const
+QImage Document::renderToLayer(const QRect &r, bool quickmask, Synchronize *sync, bool *abort) const
 {
 	Layer::Panel panel;
 	panel.image_ = QImage(r.width(), r.height(), QImage::Format_RGBA8888);
 	panel.offset_ = r.topLeft();
-	renderToEachPanels(&panel, *current_layer(), nullptr, QColor(), 255, sync);
+	renderToEachPanels(&panel, *current_layer(), nullptr, QColor(), 255, sync, abort);
 	if (quickmask) {
-		renderToEachPanels(&panel, *selection_layer(), nullptr, QColor(255, 0, 0), -128, sync);
+		renderToEachPanels(&panel, *selection_layer(), nullptr, QColor(255, 0, 0), -128, sync, abort);
 	}
 	return panel.image_;
 }

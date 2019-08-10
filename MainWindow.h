@@ -28,8 +28,14 @@ private:
 	void setImage(const QImage &image, bool fitview);
 	void setImage(QByteArray const &ba);
 
+	enum class Operation {
+		PaintToCurrentLayer,
+		AddSelection,
+		SubSelection,
+	};
+	void paintColor(Operation op, const Document::Layer &layer);
+
 	void drawBrush(bool one);
-	void paintColor(const Document::Layer &layer);
 	void test();
 	void updateImageView();
 	void setColorRed(int value);
@@ -49,7 +55,7 @@ public:
 	Document const *document() const;
 
 	void fitView();
-	QImage renderImage(const QRect &r) const;
+	QImage renderImage(const QRect &r, bool quickmask) const;
 	QRect selectionRect() const;
 	void openFile(const QString &path);
 	int documentWidth() const;

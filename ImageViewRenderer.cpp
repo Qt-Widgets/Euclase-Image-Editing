@@ -11,7 +11,7 @@ void ImageViewRenderer::run()
 {
 	while (requested_) {
 		requested_ = false;
-		QImage image = mainwindow_->renderImage(rect_);
+		QImage image = mainwindow_->renderImage(rect_, false);
 		emit done(image);
 	}
 }

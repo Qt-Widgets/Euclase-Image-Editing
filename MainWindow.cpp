@@ -166,7 +166,7 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 
 	Document::Layer layer(w, h);
 	layer.image() = image;
-	document()->render(document()->current_layer(), layer, nullptr, QColor());
+	document()->renderToLayer(document()->current_layer(), layer, nullptr, QColor());
 
 	if (1) {
 		int w = documentWidth();
@@ -193,9 +193,9 @@ void MainWindow::setImage(QByteArray const &ba)
 	setImage(image, true);
 }
 
-QImage MainWindow::renderImage(QRect const &r) const
+QImage MainWindow::renderImage(QRect const &r, bool quickmask) const
 {
-	return document()->render(r);
+	return document()->renderToLayer(r, quickmask);
 }
 
 QRect MainWindow::selectionRect() const
@@ -354,9 +354,20 @@ void MainWindow::updateImageView()
 	ui->widget_image_view->paintViewLater();
 }
 
-void MainWindow::paintColor(Document::Layer const &layer)
+void MainWindow::paintColor(Operation op, Document::Layer const &layer)
 {
-	document()->paint(layer, foregroundColor());
+	if (op == Operation::PaintToCurrentLayer) {
+		document()->paintToCurrentLayer(layer, foregroundColor());
+		return;
+	}
+	if (op == Operation::AddSelection) {
+		document()->addSelection(layer);
+		return;
+	}
+	if (op == Operation::SubSelection) {
+		document()->subSelection(layer);
+		return;
+	}
 }
 
 void MainWindow::drawBrush(bool one)
@@ -384,7 +395,7 @@ void MainWindow::drawBrush(bool one)
 		Document::Layer layer(image.width(), image.height());
 		layer.image() = image;
 		layer.offset() = QPoint(x0, y0);
-		paintColor(layer);
+		paintColor(Operation::PaintToCurrentLayer, layer);
 	};
 
 	auto Point = [&](double t){
@@ -531,10 +542,11 @@ bool MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
 			int h = y1 - y0 + 1;
 			QImage image(w, h, QImage::Format_Grayscale8);
 			image.fill(Qt::white);
-			Document::Layer layer(x + w, y + h, true);
-			layer.offset() = QPoint(x, y);
-			layer.image() = image;
-			document()->addSelection(layer);
+			Document::Layer layer(0, 0);
+			auto panel = layer.addPanel();
+			panel->offset_ = QPoint(x, y);
+			panel->image_ = image;
+			paintColor(Operation::SubSelection, layer);
 			updateImageView();
 			return true;
 		}
@@ -671,7 +683,7 @@ void MainWindow::test()
 	Document::Layer layer(image.width(), image.height());
 	layer.image() = image;
 	layer.offset() = QPoint(14, 14);
-	paintColor(layer);
+	paintColor(Operation::PaintToCurrentLayer, layer);
 
 	updateImageView();
 }

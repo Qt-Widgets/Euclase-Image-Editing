@@ -42,14 +42,21 @@ protected:
 	void mouseMoveEvent(QMouseEvent *event) override;
 	void mouseReleaseEvent(QMouseEvent *e);
 	void wheelEvent(QWheelEvent *) override;
+	void timerEvent(QTimerEvent *);
 public:
 	explicit ImageViewWidget(QWidget *parent = nullptr);
 	~ImageViewWidget() override;
 
+	void bind(MainWindow *m, QScrollBar *vsb, QScrollBar *hsb);
+
+	QPointF mapFromViewportToDocument(const QPointF &pos);
+	QPointF mapFromDocumentToViewport(QPointF const &pos);
+
+	Synchronize *synchronizer();
+
 	void showRect(const QPointF &start, const QPointF &end);
 	void hideRect();
 
-	void bind(MainWindow *m, QScrollBar *vsb, QScrollBar *hsb);
 
 	void clear();
 
@@ -57,8 +64,8 @@ public:
 
 	void scaleFit(double ratio = 1.0);
 	void scale100();
-	QPointF mapToDocument(const QPointF &pos);
-	QPointF mapToViewport(QPointF const &pos);
+
+
 	void zoomIn();
 	void zoomOut();
 
@@ -67,15 +74,10 @@ public:
 	void setSelectionOutline(SelectionOutlineBitmap const &data);
 	void clearSelectionOutline();
 	QBitmap updateSelection_();
-	Synchronize *synchronizer();
 	SelectionOutlineBitmap renderSelectionOutlineBitmap(bool *abort);
-signals:
-	void scrollByWheel(int lines);
 private slots:
 	void onRenderingCompleted(const QImage &image);
 	void onSelectionOutlineRenderingCompleted(const SelectionOutlineBitmap &data);
-protected:
-	void timerEvent(QTimerEvent *event);
 };
 
 #endif // IMAGEVIEWWIDGET_H

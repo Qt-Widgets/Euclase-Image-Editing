@@ -15,7 +15,7 @@ void ImageViewRenderer::run()
 {
 	while (requested_) {
 		requested_ = false;
-		bool quickmask = true;
+		bool quickmask = false;
 		QImage image = mainwindow_->renderImage(rect_, quickmask, &abort_);
 		emit done(image);
 	}

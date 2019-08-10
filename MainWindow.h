@@ -70,7 +70,7 @@ public:
 	const Brush &currentBrush() const;
 	void changeTool(Tool tool);
 	MainWindow::Tool currentTool() const;
-	SelectionOutlineBitmap renderSelectionOutline(const QRect &r, bool *abort) const;
+	SelectionOutlineBitmap renderSelectionOutline(bool *abort) const;
 	SelectionOutlineBitmap renderSelectionOutlineBitmap(bool *abort);
 public slots:
 	void setForegroundColor(QColor const &color);

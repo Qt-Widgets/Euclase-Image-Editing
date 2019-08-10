@@ -165,8 +165,6 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 	int w = image.width();
 	int h = image.height();
 
-//	document()->current_layer()->image() = QImage(w, h, QImage::Format_RGBA8888);
-//	document()->current_layer()->image().fill(Qt::transparent);
 	document()->current_layer()->create(w, h);
 
 	Document::Layer layer(w, h);
@@ -182,8 +180,7 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 		pr.setRenderHint(QPainter::Antialiasing);
 		pr.setPen(Qt::NoPen);
 		pr.setBrush(Qt::white);
-//		pr.drawEllipse(0, 0, 3, 3);
-		pr.drawEllipse(0, 0, w - 1, h - 1);
+		pr.drawEllipse(0, 0, w, h);
 	}
 	ui->widget_image_view->update();
 
@@ -207,7 +204,7 @@ QImage MainWindow::renderImage(QRect const &r, bool quickmask, bool *abort) cons
 	return document()->renderToLayer(r, quickmask, ui->widget_image_view->synchronizer(), abort);
 }
 
-SelectionOutlineBitmap MainWindow::renderSelectionOutline(QRect const &r, bool *abort) const
+SelectionOutlineBitmap MainWindow::renderSelectionOutline(bool *abort) const
 {
 	return ui->widget_image_view->renderSelectionOutlineBitmap(abort);
 }
@@ -284,7 +281,7 @@ void MainWindow::on_action_file_save_as_triggered()
 QImage MainWindow::renderFilterTargetImage()
 {
 	QSize sz = document()->current_layer()->size();
-	QImage image = renderImage(QRect(0, 0, sz.width(), sz.height()), false, false);
+	QImage image = renderImage(QRect(0, 0, sz.width(), sz.height()), false, nullptr);
 	return image;
 }
 
@@ -498,7 +495,7 @@ void MainWindow::onPenUp(double x, double y)
 QPointF MainWindow::pointOnDocument(int x, int y) const
 {
 	QPointF pos(x + 0.5, y + 0.5);
-	return ui->widget_image_view->mapToDocument(pos);
+	return ui->widget_image_view->mapFromViewportToDocument(pos);
 }
 
 bool MainWindow::onMouseLeftButtonPress(int x, int y)

@@ -91,6 +91,46 @@ ImageViewWidget::~ImageViewWidget()
 	delete m;
 }
 
+MainWindow *ImageViewWidget::mainwindow()
+{
+	return m->mainwindow;
+}
+
+Document *ImageViewWidget::document()
+{
+	return m->mainwindow->document();
+}
+
+Document const *ImageViewWidget::document() const
+{
+	return m->mainwindow->document();
+}
+
+void ImageViewWidget::bind(MainWindow *mainwindow, QScrollBar *vsb, QScrollBar *hsb)
+{
+	m->mainwindow = mainwindow;
+	m->v_scroll_bar = vsb;
+	m->h_scroll_bar = hsb;
+}
+
+QPointF ImageViewWidget::mapFromViewportToDocument(QPointF const &pos)
+{
+	double cx = width() / 2.0;
+	double cy = height() / 2.0;
+	double x = (pos.x() - cx + m->image_scroll_x) / m->image_scale;
+	double y = (pos.y() - cy + m->image_scroll_y) / m->image_scale;
+	return QPointF(x, y);
+}
+
+QPointF ImageViewWidget::mapFromDocumentToViewport(QPointF const &pos)
+{
+	double cx = width() / 2.0;
+	double cy = height() / 2.0;
+	double x = pos.x() * m->image_scale + cx - m->image_scroll_x;
+	double y = pos.y() * m->image_scale + cy - m->image_scroll_y;
+	return QPointF(x, y);
+}
+
 Synchronize *ImageViewWidget::synchronizer()
 {
 	return &m->sync;
@@ -134,23 +174,6 @@ QBrush ImageViewWidget::stripeBrush(bool blink)
 		}
 	}
 	return QBrush(image);
-}
-
-Document *ImageViewWidget::document()
-{
-	return m->mainwindow->document();
-}
-
-Document const *ImageViewWidget::document() const
-{
-	return m->mainwindow->document();
-}
-
-void ImageViewWidget::bind(MainWindow *mainwindow, QScrollBar *vsb, QScrollBar *hsb)
-{
-	m->mainwindow = mainwindow;
-	m->v_scroll_bar = vsb;
-	m->h_scroll_bar = hsb;
 }
 
 void ImageViewWidget::internalScrollImage(double x, double y, bool updateview)
@@ -202,8 +225,6 @@ void ImageViewWidget::clear()
 	paintViewLater(true, true);
 }
 
-
-
 QSizeF ImageViewWidget::imageScrollRange() const
 {
 	QSize sz = imageSize();
@@ -214,25 +235,20 @@ QSizeF ImageViewWidget::imageScrollRange() const
 
 void ImageViewWidget::setScrollBarRange(QScrollBar *h, QScrollBar *v)
 {
-	h->blockSignals(true);
-	v->blockSignals(true);
+	auto bh = h->blockSignals(true);
+	auto bv = v->blockSignals(true);
 	QSizeF sz = imageScrollRange();
 	h->setRange(0, (int)sz.width());
 	v->setRange(0, (int)sz.height());
 	h->setPageStep(width());
 	v->setPageStep(height());
-	h->blockSignals(false);
-	v->blockSignals(false);
+	h->blockSignals(bh);
+	v->blockSignals(bv);
 }
 
 void ImageViewWidget::updateScrollBarRange()
 {
 	setScrollBarRange(m->h_scroll_bar, m->v_scroll_bar);
-}
-
-MainWindow *ImageViewWidget::mainwindow()
-{
-	return m->mainwindow;
 }
 
 QBrush ImageViewWidget::getTransparentBackgroundBrush()
@@ -252,49 +268,6 @@ QSize ImageViewWidget::imageSize() const
 {
 	auto layer = document()->current_layer();
 	return layer ? layer->size() : QSize();
-}
-
-void ImageViewWidget::paintEvent(QPaintEvent *)
-{
-	QPainter pr(this);
-	int x = m->destination_rect.x();
-	int y = m->destination_rect.y();
-	int w = m->destination_rect.width();
-	int h = m->destination_rect.height();
-	if (w > 0 && h > 0) {
-		if (!m->rendered_image.isNull()) {
-			pr.drawImage(m->destination_rect, m->rendered_image, m->rendered_image.rect());
-		}
-		misc::drawFrame(&pr, (int)x - 1, (int)y - 1, (int)w + 2, (int)h + 2, Qt::black, Qt::black);
-	}
-
-	if (!m->selection_outline.bitmap.isNull()) {
-		QBrush brush = stripeBrush(false);
-		pr.save();
-		pr.setClipRegion(QRegion(m->selection_outline.bitmap).translated(m->selection_outline.point));
-		pr.setOpacity(0.5);
-		pr.fillRect(0, 0, width(), height(), brush);
-		pr.restore();
-	}
-
-	if (m->rect_visible) {
-		pr.setOpacity(0.5);
-		QBrush brush = stripeBrush(true);
-		double x0 = floor(m->rect_start.x());
-		double y0 = floor(m->rect_start.y());
-		double x1 = floor(m->rect_end.x());
-		double y1 = floor(m->rect_end.y());
-		if (x0 > x1) std::swap(x0, x1);
-		if (y0 > y1) std::swap(y0, y1);
-		QPointF pt;
-		pt = mapToViewport(QPointF(x0, y0));
-		x0 = floor(pt.x());
-		y0 = floor(pt.y());
-		pt = mapToViewport(QPointF(x1 + 1, y1 + 1));
-		x1 = floor(pt.x());
-		y1 = floor(pt.y());
-		misc::drawFrame(&pr, x0, y0, x1 - x0, y1 - y0, brush, brush);
-	}
 }
 
 void ImageViewWidget::setSelectionOutline(const SelectionOutlineBitmap &data)
@@ -317,12 +290,6 @@ void ImageViewWidget::onRenderingCompleted(QImage const &image)
 void ImageViewWidget::onSelectionOutlineRenderingCompleted(SelectionOutlineBitmap const &data)
 {
 	setSelectionOutline(data);
-	update();
-}
-
-void ImageViewWidget::timerEvent(QTimerEvent *event)
-{
-	m->stripe_animation = (m->stripe_animation + 1) & 7;
 	update();
 }
 
@@ -352,78 +319,14 @@ void ImageViewWidget::paintViewLater(bool image, bool selection_outline)
 	}
 }
 
-void ImageViewWidget::resizeEvent(QResizeEvent *)
-{
-	clearSelectionOutline();
-	updateScrollBarRange();
-	paintViewLater(true, true);
-}
-
-void ImageViewWidget::mousePressEvent(QMouseEvent *e)
-{
-	m->left_button = (e->buttons() & Qt::LeftButton);
-	if (m->left_button) {
-		QPoint pos = mapFromGlobal(QCursor::pos());
-		m->mouse_press_pos = pos;
-		m->scroll_origin_x = m->image_scroll_x;
-		m->scroll_origin_y = m->image_scroll_y;
-		mainwindow()->onMouseLeftButtonPress(pos.x(), pos.y());
-	}
-}
-
-QPointF ImageViewWidget::mapToDocument(QPointF const &pos)
-{
-	double cx = width() / 2.0;
-	double cy = height() / 2.0;
-	double x = (pos.x() - cx + m->image_scroll_x) / m->image_scale;
-	double y = (pos.y() - cy + m->image_scroll_y) / m->image_scale;
-	return QPointF(x, y);
-}
-
-QPointF ImageViewWidget::mapToViewport(QPointF const &pos)
-{
-	double cx = width() / 2.0;
-	double cy = height() / 2.0;
-	double x = pos.x() * m->image_scale + cx - m->image_scroll_x;
-	double y = pos.y() * m->image_scale + cy - m->image_scroll_y;
-	return QPointF(x, y);
-}
-
-void ImageViewWidget::mouseMoveEvent(QMouseEvent *)
-{
-	if (isValidImage()) {
-		QPoint pos = mapFromGlobal(QCursor::pos());
-		if (m->left_button && hasFocus()) {
-			if (!mainwindow()->onMouseMove(pos.x(), pos.y(), true)) {
-				int delta_x = pos.x() - m->mouse_press_pos.x();
-				int delta_y = pos.y() - m->mouse_press_pos.y();
-				scrollImage(m->scroll_origin_x - delta_x, m->scroll_origin_y - delta_y, true);
-			}
-		}
-		m->cursor_anchor_pos = mapToDocument(pos);
-		m->wheel_delta = 0;
-	}
-}
-
-void ImageViewWidget::mouseReleaseEvent(QMouseEvent *)
-{
-	if (isValidImage()) {
-		QPoint pos = mapFromGlobal(QCursor::pos());
-		if (m->left_button && hasFocus()) {
-			mainwindow()->onMouseLeftButtonRelase(pos.x(), pos.y(), true);
-		}
-	}
-	m->left_button = false;
-}
-
 void ImageViewWidget::updateCursorAnchorPos()
 {
-	m->cursor_anchor_pos = mapToDocument(mapFromGlobal(QCursor::pos()));
+	m->cursor_anchor_pos = mapFromViewportToDocument(mapFromGlobal(QCursor::pos()));
 }
 
 void ImageViewWidget::updateCenterAnchorPos()
 {
-	m->center_anchor_pos = mapToDocument(QPointF(width() / 2.0, height() / 2.0));
+	m->center_anchor_pos = mapFromViewportToDocument(QPointF(width() / 2.0, height() / 2.0));
 }
 
 void ImageViewWidget::setImageScale(double scale, bool updateview)
@@ -497,16 +400,6 @@ void ImageViewWidget::zoomOut()
 	zoomToCenter(m->image_scale / 2);
 }
 
-void ImageViewWidget::wheelEvent(QWheelEvent *e)
-{
-	double scale = 1;
-	double d = e->delta();
-	double t = 1.001;
-	scale *= pow(t, d);
-	clearSelectionOutline();
-	zoomToCursor(m->image_scale * scale);
-}
-
 SelectionOutlineBitmap ImageViewWidget::renderSelectionOutlineBitmap(bool *abort)
 {
 	SelectionOutlineBitmap data;
@@ -515,16 +408,16 @@ SelectionOutlineBitmap ImageViewWidget::renderSelectionOutlineBitmap(bool *abort
 	if (dw > 0 && dh > 0) {
 		QPointF vp0(0, 0);
 		QPointF vp1(dw, dh);
-		vp0 = mapToViewport(vp0);
-		vp1 = mapToViewport(vp1);
+		vp0 = mapFromDocumentToViewport(vp0);
+		vp1 = mapFromDocumentToViewport(vp1);
 		vp0.rx() = std::max(vp0.rx(), (double)0);
 		vp0.ry() = std::max(vp0.ry(), (double)0);
 		vp1.rx() = std::min(vp1.rx(), (double)width());
 		vp1.ry() = std::min(vp1.ry(), (double)height());
 		int vw = vp1.x() - vp0.x();
 		int vh = vp1.y() - vp0.y();
-		QPointF dp0 = mapToDocument(vp0);
-		QPointF dp1 = mapToDocument(vp1);
+		QPointF dp0 = mapFromViewportToDocument(vp0);
+		QPointF dp1 = mapFromViewportToDocument(vp1);
 		QImage selection;
 		{
 			int x = floor(dp0.x());
@@ -534,7 +427,7 @@ SelectionOutlineBitmap ImageViewWidget::renderSelectionOutlineBitmap(bool *abort
 			selection = document()->renderSelection(QRect(x, y, w, h), &m->sync, abort);
 			if (abort && *abort) return SelectionOutlineBitmap();
 			selection = selection.scaled(vw, vh);
-			data.point = mapToViewport(QPointF(x, y)).toPoint();
+			data.point = mapFromDocumentToViewport(QPointF(x, y)).toPoint();
 		}
 		if (selection.width() > 0 && selection.height() > 0) {
 			QImage image(vw, vh, QImage::Format_Grayscale8);
@@ -556,5 +449,108 @@ SelectionOutlineBitmap ImageViewWidget::renderSelectionOutlineBitmap(bool *abort
 	return data;
 }
 
+void ImageViewWidget::paintEvent(QPaintEvent *)
+{
+	QPainter pr(this);
+	int x = m->destination_rect.x();
+	int y = m->destination_rect.y();
+	int w = m->destination_rect.width();
+	int h = m->destination_rect.height();
+	if (w > 0 && h > 0) {
+		if (!m->rendered_image.isNull()) {
+			pr.drawImage(m->destination_rect, m->rendered_image, m->rendered_image.rect());
+		}
+		misc::drawFrame(&pr, (int)x - 1, (int)y - 1, (int)w + 2, (int)h + 2, Qt::black, Qt::black);
+	}
 
+	if (!m->selection_outline.bitmap.isNull()) {
+		QBrush brush = stripeBrush(false);
+		pr.save();
+		pr.setClipRegion(QRegion(m->selection_outline.bitmap).translated(m->selection_outline.point));
+		pr.setOpacity(0.5);
+		pr.fillRect(0, 0, width(), height(), brush);
+		pr.restore();
+	}
+
+	if (m->rect_visible) {
+		pr.setOpacity(0.5);
+		QBrush brush = stripeBrush(true);
+		double x0 = floor(m->rect_start.x());
+		double y0 = floor(m->rect_start.y());
+		double x1 = floor(m->rect_end.x());
+		double y1 = floor(m->rect_end.y());
+		if (x0 > x1) std::swap(x0, x1);
+		if (y0 > y1) std::swap(y0, y1);
+		QPointF pt;
+		pt = mapFromDocumentToViewport(QPointF(x0, y0));
+		x0 = floor(pt.x());
+		y0 = floor(pt.y());
+		pt = mapFromDocumentToViewport(QPointF(x1 + 1, y1 + 1));
+		x1 = floor(pt.x());
+		y1 = floor(pt.y());
+		misc::drawFrame(&pr, x0, y0, x1 - x0, y1 - y0, brush, brush);
+	}
+}
+
+void ImageViewWidget::resizeEvent(QResizeEvent *)
+{
+	clearSelectionOutline();
+	updateScrollBarRange();
+	paintViewLater(true, true);
+}
+
+void ImageViewWidget::mousePressEvent(QMouseEvent *e)
+{
+	m->left_button = (e->buttons() & Qt::LeftButton);
+	if (m->left_button) {
+		QPoint pos = mapFromGlobal(QCursor::pos());
+		m->mouse_press_pos = pos;
+		m->scroll_origin_x = m->image_scroll_x;
+		m->scroll_origin_y = m->image_scroll_y;
+		mainwindow()->onMouseLeftButtonPress(pos.x(), pos.y());
+	}
+}
+
+void ImageViewWidget::mouseMoveEvent(QMouseEvent *)
+{
+	if (isValidImage()) {
+		QPoint pos = mapFromGlobal(QCursor::pos());
+		if (m->left_button && hasFocus()) {
+			if (!mainwindow()->onMouseMove(pos.x(), pos.y(), true)) {
+				clearSelectionOutline();
+				int delta_x = pos.x() - m->mouse_press_pos.x();
+				int delta_y = pos.y() - m->mouse_press_pos.y();
+				scrollImage(m->scroll_origin_x - delta_x, m->scroll_origin_y - delta_y, true);
+			}
+		}
+		m->cursor_anchor_pos = mapFromViewportToDocument(pos);
+		m->wheel_delta = 0;
+	}
+}
+
+void ImageViewWidget::mouseReleaseEvent(QMouseEvent *)
+{
+	if (isValidImage()) {
+		QPoint pos = mapFromGlobal(QCursor::pos());
+		if (m->left_button && hasFocus()) {
+			mainwindow()->onMouseLeftButtonRelase(pos.x(), pos.y(), true);
+		}
+	}
+	m->left_button = false;
+}
+
+void ImageViewWidget::wheelEvent(QWheelEvent *e)
+{
+	double scale = 1;
+	double d = e->delta();
+	double t = 1.001;
+	scale *= pow(t, d);
+	zoomToCursor(m->image_scale * scale);
+}
+
+void ImageViewWidget::timerEvent(QTimerEvent *)
+{
+	m->stripe_animation = (m->stripe_animation + 1) & 7;
+	update();
+}
 

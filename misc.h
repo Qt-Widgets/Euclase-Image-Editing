@@ -26,7 +26,7 @@ public:
 	static QString normalizePathSeparator(QString const &str);
 	static QString joinWithSlash(QString const &left, QString const &right);
 	static void setFixedSize(QWidget *w);
-	static void drawFrame(QPainter *pr, int x, int y, int w, int h, QColor color_topleft, QColor color_bottomright = QColor());
+	static void drawFrame(QPainter *pr, int x, int y, int w, int h, QBrush color_topleft, QBrush color_bottomright);
 	static void dump(const uint8_t *ptr, size_t len);
 	static void dump(QByteArray const *in);
 	static bool isText(QString const &mimetype);

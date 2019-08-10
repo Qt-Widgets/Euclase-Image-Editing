@@ -91,16 +91,12 @@ void Document::render(Layer::Panel *target_panel, Layer::Panel const *input_pane
 		uint8_t *tmpmask = nullptr;
 		QImage maskimg;
 		if (mask_layer) {
-#if 0
-			renderMask(&maskimg, QRect(sx0, sy0, sx1 - sx0, sy1 - sy0), mask_layer->image());
-#else
 			Layer::Panel panel;
 			panel.offset_ = QPoint(target_panel->offset_.x() + sx0, target_panel->offset_.y() + sy0);
 			panel.image_ = QImage(w, h, QImage::Format_Grayscale8);
 			panel.image_.fill(Qt::black);
 			render_(&panel, *mask_layer, nullptr, Qt::white);
 			maskimg = panel.image_;
-#endif
 		} else {
 			tmpmask = (uint8_t *)alloca(w);
 			memset(tmpmask, 255, w);
@@ -111,6 +107,12 @@ void Document::render(Layer::Panel *target_panel, Layer::Panel const *input_pane
 
 			QColor const &c = brush_color;
 
+			uint8_t xor = 0;
+			if (opacity < 0) {
+				opacity = -opacity;
+				xor = 255;
+			}
+
 			if (target_panel->isRGBA8888()) {
 				euclase::PixelRGBA color(c.red(), c.green(), c.blue());
 				for (int i = 0; i < h; i++) {
@@ -119,7 +121,7 @@ void Document::render(Layer::Panel *target_panel, Layer::Panel const *input_pane
 					uint8_t const *s = selection.scanLine(y + i);
 					Pixel *d = reinterpret_cast<Pixel *>(target_panel->image_.scanLine(dy0 + i));
 					for (int j = 0; j < w; j++) {
-						color.a = opacity * s[x + j] * m[j] / (255 * 255);
+						color.a = opacity * (s[x + j] ^ xor) * m[j] / (255 * 255);
 						d[dx0 + j] = AlphaBlend::blend_with_gamma_collection(d[dx0 + j], color);
 					}
 				}
@@ -132,7 +134,7 @@ void Document::render(Layer::Panel *target_panel, Layer::Panel const *input_pane
 					uint8_t const *s = reinterpret_cast<uint8_t const *>(selection.scanLine(y + i));
 					uint8_t *d = reinterpret_cast<uint8_t *>(target_panel->image_.scanLine(dy0 + i));
 					for (int j = 0; j < w; j++) {
-						uint8_t a = opacity * s[x + j] * m[j] / (255 * 255);
+						uint8_t a = opacity * (s[x + j] ^ xor) * m[j] / (255 * 255);
 						d[dx0 + j] = AlphaBlend::blend(Pixel(d[dx0 + j]), Pixel(l, a)).l;
 					}
 				}
@@ -161,14 +163,14 @@ void Document::render(Layer::Panel *target_panel, Layer::Panel const *input_pane
 	}
 }
 
-void Document::render_(Layer::Panel *target_panel, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color)
+void Document::render_(Layer::Panel *target_panel, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color, int opacity)
 {
 	if (mask_layer && mask_layer->image().isNull()) {
 		mask_layer = nullptr;
 	}
 
 	for (Layer::PanelPtr const &input_panel : input_layer.panels) {
-		render(target_panel, input_panel.get(), mask_layer, brush_color);
+		render(target_panel, input_panel.get(), mask_layer, brush_color, opacity);
 	}
 }
 
@@ -182,6 +184,11 @@ void Document::render(Layer *target_layer, Layer const &input_layer, Layer *mask
 void Document::paint(Layer const &source, QColor const &brush_color)
 {
 	render(&m->current_layer, source, selection_layer(), brush_color);
+}
+
+void Document::addSelection(Layer const &source)
+{
+	render(selection_layer(), source, nullptr, Qt::white);
 }
 
 void Document::renderSelection(QImage *dstimg, const QRect &r, QImage const &selimg)
@@ -251,6 +258,8 @@ QImage Document::render(const QRect &r) const
 	panel.image_ = QImage(r.width(), r.height(), QImage::Format_RGBA8888);
 	panel.offset_ = r.topLeft();
 	render_(&panel, *current_layer(), nullptr, QColor());
-//	render_(&panel, *current_layer(), selection_layer(), QColor());
+	{
+		render_(&panel, *selection_layer(), nullptr, QColor(255, 0, 0), -128);
+	}
 	return panel.image_;
 }

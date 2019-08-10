@@ -246,15 +246,13 @@ void misc::setFixedSize(QWidget *w)
 	w->setFixedSize(w->size());
 }
 
-void misc::drawFrame(QPainter *pr, int x, int y, int w, int h, QColor color_topleft, QColor color_bottomright)
+void misc::drawFrame(QPainter *pr, int x, int y, int w, int h, QBrush color_topleft, QBrush color_bottomright)
 {
 	if (w < 3 || h < 3) {
 		if (w > 0 && h > 0) {
 			pr->fillRect(x, y, w, h, color_topleft);
 		}
 	} else {
-		if (!color_topleft.isValid()) color_topleft = Qt::black;
-		if (!color_bottomright.isValid()) color_bottomright = color_topleft;
 		pr->fillRect(x, y, w - 1, 1, color_topleft);
 		pr->fillRect(x, y + 1, 1, h -1, color_topleft);
 		pr->fillRect(x + w - 1, y, 1, h -1, color_bottomright);

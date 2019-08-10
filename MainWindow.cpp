@@ -472,6 +472,7 @@ bool MainWindow::onMouseLeftButtonPress(int x, int y)
 
 	if (tool == Tool::Rect) {
 		m->button_pressed_start_pt = pointOnDocument(x, y);
+		ui->widget_image_view->showRect(m->button_pressed_start_pt, m->button_pressed_start_pt);
 		return true;
 	}
 
@@ -494,6 +495,7 @@ bool MainWindow::onMouseMove(int x, int y, bool leftbutton)
 	if (tool == Tool::Rect) {
 		if (leftbutton) {
 			m->button_pressed_end_pt = pointOnDocument(x, y);
+			ui->widget_image_view->showRect(m->button_pressed_start_pt, m->button_pressed_end_pt);
 			return true;
 		}
 	}
@@ -516,6 +518,24 @@ bool MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
 
 	if (tool == Tool::Rect) {
 		if (leftbutton) {
+			ui->widget_image_view->hideRect();
+			int x0 = floor(m->button_pressed_start_pt.x());
+			int y0 = floor(m->button_pressed_start_pt.y());
+			int x1 = floor(m->button_pressed_end_pt.x());
+			int y1 = floor(m->button_pressed_end_pt.y());
+			if (x0 > x1) std::swap(x0, x1);
+			if (y0 > y1) std::swap(y0, y1);
+			int x = x0;
+			int y = y0;
+			int w = x1 - x0 + 1;
+			int h = y1 - y0 + 1;
+			QImage image(w, h, QImage::Format_Grayscale8);
+			image.fill(Qt::white);
+			Document::Layer layer(x + w, y + h, true);
+			layer.offset() = QPoint(x, y);
+			layer.image() = image;
+			document()->addSelection(layer);
+			updateImageView();
 			return true;
 		}
 	}

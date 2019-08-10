@@ -33,6 +33,7 @@ private:
 	void updateCursorAnchorPos();
 	void updateCenterAnchorPos();
 	void calcDestinationRect();
+	QBrush stripeBrush(bool pitch);
 protected:
 	void resizeEvent(QResizeEvent *) override;
 	void paintEvent(QPaintEvent *) override;
@@ -44,6 +45,9 @@ public:
 	explicit ImageViewWidget(QWidget *parent = nullptr);
 	~ImageViewWidget() override;
 
+	void showRect(const QPointF &start, const QPointF &end);
+	void hideRect();
+
 	void bind(MainWindow *m, QScrollBar *vsb, QScrollBar *hsb);
 
 	void clear();
@@ -53,6 +57,7 @@ public:
 	void scaleFit(double ratio = 1.0);
 	void scale100();
 	QPointF mapFromViewport(const QPointF &pos);
+	QPointF mapToViewport(QPointF const &pos);
 	void filter_median_rgba8888();
 	void zoomIn();
 	void zoomOut();
@@ -63,6 +68,10 @@ signals:
 	void scrollByWheel(int lines);
 private slots:
 	void onRenderingCompleted(const QImage &image);
+
+	// QObject interface
+protected:
+	void timerEvent(QTimerEvent *event);
 };
 
 #endif // IMAGEVIEWWIDGET_H

@@ -8,6 +8,7 @@
 #include "joinpath.h"
 #include "misc.h"
 #include "ImageViewRenderer.h"
+#include <QBitmap>
 #include <QBuffer>
 #include <QDebug>
 #include <QElapsedTimer>
@@ -46,9 +47,13 @@ struct ImageViewWidget::Private {
 	QImage rendered_image;
 	QRect destination_rect;
 
-#ifndef APP_GUITAR
 	QPixmap transparent_pixmap;
-#endif
+
+	int stripe_animation = 0;
+
+	bool rect_visible = false;
+	QPointF rect_start;
+	QPointF rect_end;
 };
 
 ImageViewWidget::ImageViewWidget(QWidget *parent)
@@ -67,11 +72,53 @@ ImageViewWidget::ImageViewWidget(QWidget *parent)
 
 	m->renderer = new ImageViewRenderer(this);
 	connect(m->renderer, &ImageViewRenderer::done, this, &ImageViewWidget::onRenderingCompleted);
+
+	startTimer(100);
 }
 
 ImageViewWidget::~ImageViewWidget()
 {
 	delete m;
+}
+
+void ImageViewWidget::showRect(QPointF const &start, QPointF const &end)
+{
+	m->rect_start = start;
+	m->rect_end = end;
+	m->rect_visible = true;
+	update();
+}
+
+void ImageViewWidget::hideRect()
+{
+	m->rect_visible = false;
+	update();
+}
+
+QBrush ImageViewWidget::stripeBrush(bool pitch)
+{
+	int mask = pitch ? 2 : 4;
+	int a = m->stripe_animation;
+	QImage image(8, 8, QImage::Format_Indexed8);
+	image.setColor(0, qRgb(0, 0, 0));
+	image.setColor(1, qRgb(255, 255, 255));
+	if (pitch) {
+		uint8_t v = (a & 4) ? 1: 0;
+		for (int y = 0; y < 8; y++) {
+			uint8_t *p = image.scanLine(y);
+			for (int x = 0; x < 8; x++) {
+				p[x] = v;
+			}
+		}
+	} else {
+		for (int y = 0; y < 8; y++) {
+			uint8_t *p = image.scanLine(y);
+			for (int x = 0; x < 8; x++) {
+				p[x] = ((a - x - y) & mask) ? 1 : 0;
+			}
+		}
+	}
+	return QBrush(image);
 }
 
 Document *ImageViewWidget::document()
@@ -200,13 +247,38 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 		if (!m->rendered_image.isNull()) {
 			pr.drawImage(m->destination_rect, m->rendered_image, m->rendered_image.rect());
 		}
-		misc::drawFrame(&pr, (int)x - 1, (int)y - 1, (int)w + 2, (int)h + 2, Qt::black);
+		misc::drawFrame(&pr, (int)x - 1, (int)y - 1, (int)w + 2, (int)h + 2, Qt::black, Qt::black);
+	}
+
+	if (m->rect_visible) {
+		pr.setOpacity(0.5);
+		QBrush brush = stripeBrush(true);
+		double x0 = floor(m->rect_start.x());
+		double y0 = floor(m->rect_start.y());
+		double x1 = floor(m->rect_end.x());
+		double y1 = floor(m->rect_end.y());
+		if (x0 > x1) std::swap(x0, x1);
+		if (y0 > y1) std::swap(y0, y1);
+		QPointF pt;
+		pt = mapToViewport(QPointF(x0, y0));
+		x0 = floor(pt.x());
+		y0 = floor(pt.y());
+		pt = mapToViewport(QPointF(x1 + 1, y1 + 1));
+		x1 = floor(pt.x());
+		y1 = floor(pt.y());
+		misc::drawFrame(&pr, x0, y0, x1 - x0, y1 - y0, brush, brush);
 	}
 }
 
 void ImageViewWidget::onRenderingCompleted(QImage const &image)
 {
 	m->rendered_image = image;
+	update();
+}
+
+void ImageViewWidget::timerEvent(QTimerEvent *event)
+{
+	m->stripe_animation = (m->stripe_animation + 1) & 7;
 	update();
 }
 
@@ -428,6 +500,15 @@ QPointF ImageViewWidget::mapFromViewport(QPointF const &pos)
 	double cy = height() / 2.0;
 	double x = (pos.x() - cx + m->image_scroll_x) / m->image_scale;
 	double y = (pos.y() - cy + m->image_scroll_y) / m->image_scale;
+	return QPointF(x, y);
+}
+
+QPointF ImageViewWidget::mapToViewport(QPointF const &pos)
+{
+	double cx = width() / 2.0;
+	double cy = height() / 2.0;
+	double x = pos.x() * m->image_scale + cx - m->image_scroll_x;
+	double y = pos.y() * m->image_scale + cy - m->image_scroll_y;
 	return QPointF(x, y);
 }
 

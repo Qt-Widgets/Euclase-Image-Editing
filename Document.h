@@ -37,11 +37,13 @@ public:
 			return panel;
 		}
 
-		Layer(int w = 0, int h = 0)
+		Layer(int w = 0, int h = 0, bool addpanel = true)
 			: width_(w)
 			, height_(h)
 		{
-			addPanel();
+			if (addpanel) {
+				addPanel();
+			}
 		}
 
 		void create(int w, int h)
@@ -130,11 +132,12 @@ public:
 private:
 	static void renderSelection(QImage *dstimg, const QRect &r, const QImage &selimg);
 	static QImage renderLayer(const QRect &r, Layer const &current_layer, const QImage &selection);
-	static void render_(Layer::Panel *target_panel, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color);
+	static void render_(Layer::Panel *target_panel, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity = 255);
 	static void render(Layer::Panel *target_panel, const Layer::Panel *input_panel, const Layer *mask_layer, const QColor &brush_color, int opacity = 255);
 	static void renderMask(QImage *dstimg, const QRect &r, const QImage &selimg);
 public:
 	static void render(Layer *target_layer, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color);
+	void addSelection(const Layer &source);
 };
 
 #endif // DOCUMENT_H

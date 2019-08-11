@@ -171,7 +171,7 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 	layer.image() = image;
 	document()->renderToLayer(document()->current_layer(), layer, nullptr, QColor(), ui->widget_image_view->synchronizer(), nullptr);
 
-	if (1) {
+	if (0) {
 		int w = documentWidth();
 		int h = documentHeight();
 		document()->selection_layer()->image() = QImage(w, h, QImage::Format_Grayscale8);
@@ -181,7 +181,6 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 		pr.setPen(Qt::NoPen);
 		pr.setBrush(Qt::white);
 		pr.drawEllipse(0, 0, w, h);
-		document()->selection_layer()->offset() = QPoint(10, 10);
 	}
 	ui->widget_image_view->update();
 
@@ -212,7 +211,7 @@ SelectionOutlineBitmap MainWindow::renderSelectionOutline(bool *abort) const
 
 QRect MainWindow::selectionRect() const
 {
-	return document()->selection_layer()->image().rect();
+	return document()->selection_layer()->rect();
 }
 
 void MainWindow::fitView()
@@ -342,28 +341,10 @@ void MainWindow::on_verticalScrollBar_valueChanged(int value)
 
 void MainWindow::on_action_trim_triggered()
 {
-	QRect r_doc = document()->current_layer()->image().rect();
-	QRect r_sel = selectionRect();
-	int sx0 = r_doc.x();
-	int sy0 = r_doc.y();
-	int sx1 = r_doc.x() + r_doc.width();
-	int sy1 = r_doc.y() + r_doc.height();
-	int dx0 = r_sel.x();
-	int dy0 = r_sel.y();
-	int dx1 = r_sel.width();
-	int dy1 = r_sel.height();
-	if (sx0 < dx0) { dx0 += dx0 - sx0; } else if (sx0 > dx0) { sx0 += sx0 - dx0; }
-	if (sy0 < dy0) { dy0 += dy0 - sy0; } else if (sy0 > dy0) { sy0 += sy0 - dy0; }
-	if (sx1 < dx1) { dx1 -= dx1 - sx1; } else if (sx1 > dx1) { sx1 -= sx1 - dx1; }
-	if (sy1 < dy1) { dy1 -= dy1 - sy1; } else if (sy1 > dy1) { sy1 -= sy1 - dy1; }
-	QRect r(dx0, dy0, dx1 - dx0, dy1 - dy0);
-	QImage img = document()->current_layer()->image().copy(r);
-	{
-		int w = img.width();
-		int h = img.height();
-		document()->selection_layer()->image() = QImage(w, h, QImage::Format_Grayscale8);
-	}
-	setImage(img, true);
+	QRect r = selectionRect();
+	QImage image = document()->renderToLayer(r, false, synchronizer(), nullptr);
+	clearSelection();
+	setImage(image, true);
 }
 
 void MainWindow::updateImageView()

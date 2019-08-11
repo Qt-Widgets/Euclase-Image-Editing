@@ -128,8 +128,8 @@ public:
 		{
 			return offset_;
 		}
+		QRect rect() const;
 	};
-
 
 	struct Private;
 	Private *m;

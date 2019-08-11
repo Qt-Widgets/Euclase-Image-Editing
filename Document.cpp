@@ -241,3 +241,64 @@ QImage Document::renderToLayer(const QRect &r, bool quickmask, Synchronize *sync
 	}
 	return panel.image_;
 }
+
+QRect Document::Layer::rect() const
+{
+	QRect rect;
+	const_cast<Layer *>(this)->eachPanel([&](Panel *p){
+		if (p->image_.format() == QImage::Format_Grayscale8) {
+			int w = p->image_.width();
+			int h = p->image_.height();
+			int x0 = w;
+			int y0 = h;
+			int x1 = 0;
+			int y1 = 0;
+			for (int y = 0; y < h; y++) {
+				uint8_t const *s = p->image_.scanLine(y);
+				for (int x = 0; x < w; x++) {
+					if (s[x] != 0) {
+						x0 = std::min(x0, x);
+						y0 = std::min(y0, y);
+						x1 = std::max(x1, x);
+						y1 = std::max(y1, y);
+					}
+				}
+			}
+			if (x0 < x1 && y0 < y1) {
+				QRect r = QRect(x0, y0, x1 - x0, y1 - y0).translated(offset() + p->offset_);
+				if (rect.isNull()) {
+					rect = r;
+				} else {
+					rect = rect.united(r);
+				}
+			}
+		} else if (p->image_.format() == QImage::Format_RGBA8888) {
+			int w = p->image_.width();
+			int h = p->image_.height();
+			int x0 = w;
+			int y0 = h;
+			int x1 = 0;
+			int y1 = 0;
+			for (int y = 0; y < h; y++) {
+				euclase::PixelRGBA const *s = (euclase::PixelRGBA const *)p->image_.scanLine(y);
+				for (int x = 0; x < w; x++) {
+					if (s[x].a != 0) {
+						x0 = std::min(x0, x);
+						y0 = std::min(y0, y);
+						x1 = std::max(x1, x);
+						y1 = std::max(y1, y);
+					}
+				}
+			}
+			if (x0 < x1 && y0 < y1) {
+				QRect r = QRect(x0, y0, x1 - x0, y1 - y0).translated(offset() + p->offset_);
+				if (rect.isNull()) {
+					rect = r;
+				} else {
+					rect = rect.united(r);
+				}
+			}
+		}
+	});
+	return rect;
+}

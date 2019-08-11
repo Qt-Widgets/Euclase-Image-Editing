@@ -31,6 +31,7 @@ private:
 
 	enum class Operation {
 		PaintToCurrentLayer,
+		SetSelection,
 		AddSelection,
 		SubSelection,
 	};
@@ -49,6 +50,7 @@ private:
 	QPointF pointOnDocument(int x, int y) const;
 	QImage renderFilterTargetImage();
 	void onSelectionChanged();
+	void clearSelection();
 protected:
 	void keyPressEvent(QKeyEvent *event);
 public:

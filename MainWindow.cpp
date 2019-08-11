@@ -181,6 +181,7 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 		pr.setPen(Qt::NoPen);
 		pr.setBrush(Qt::white);
 		pr.drawEllipse(0, 0, w, h);
+		document()->selection_layer()->offset() = QPoint(10, 10);
 	}
 	ui->widget_image_view->update();
 
@@ -380,10 +381,21 @@ void MainWindow::onSelectionChanged()
 	updateSelectionOutline();
 }
 
+void MainWindow::clearSelection()
+{
+	document()->clearSelection(synchronizer());
+}
+
 void MainWindow::paintLayer(Operation op, Document::Layer const &layer)
 {
 	if (op == Operation::PaintToCurrentLayer) {
 		document()->paintToCurrentLayer(layer, foregroundColor(), ui->widget_image_view->synchronizer(), nullptr);
+		return;
+	}
+	if (op == Operation::SetSelection) {
+		clearSelection();
+		document()->addSelection(layer, ui->widget_image_view->synchronizer(), nullptr);
+		onSelectionChanged();
 		return;
 	}
 	if (op == Operation::AddSelection) {
@@ -574,7 +586,7 @@ bool MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
 			auto panel = layer.addPanel();
 			panel->offset_ = QPoint(x, y);
 			panel->image_ = image;
-			paintLayer(Operation::SubSelection, layer);
+			paintLayer(Operation::SetSelection, layer);
 			updateImageView();
 			return true;
 		}

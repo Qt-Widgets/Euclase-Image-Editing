@@ -35,6 +35,18 @@ public:
 
 		int width_ = 0;
 		int height_ = 0;
+		QPoint offset_;
+
+		void clear(Synchronize *sync)
+		{
+			if (sync) sync->mutex.lock();
+
+			width_ = height_ = 0;
+			offset_ = QPoint();
+			panels.clear();
+
+			if (sync) sync->mutex.unlock();
+		}
 
 		PanelPtr addPanel()
 		{
@@ -47,9 +59,6 @@ public:
 			: width_(w)
 			, height_(h)
 		{
-//			if (addpanel) {
-//				addPanel();
-//			}
 		}
 
 		void create(int w, int h)
@@ -108,10 +117,7 @@ public:
 		}
 		QPoint &offset()
 		{
-			if (panels.empty()) {
-				addPanel();
-			}
-			return panels[0]->offset_;
+			return offset_;
 		}
 
 		QImage const &image() const
@@ -120,7 +126,7 @@ public:
 		}
 		QPoint const &offset() const
 		{
-			return panels[0]->offset_;
+			return offset_;
 		}
 	};
 
@@ -142,11 +148,12 @@ public:
 
 	QImage renderToLayer(QRect const &r, bool quickmask, Synchronize *sync, bool *abort) const;
 private:
-	static void renderToEachPanels_(Layer::Panel *target_panel, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, bool *abort);
-	static void renderToEachPanels(Layer::Panel *target_panel, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, Synchronize *sync, bool *abort);
-	static void renderToSinglePanel(Layer::Panel *target_panel, const Layer::Panel *input_panel, const Layer *mask_layer, const QColor &brush_color, int opacity = 255, bool *abort = nullptr);
+	static void renderToEachPanels_(Layer::Panel *target_panel, const QPoint &target_offset, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, bool *abort);
+	static void renderToEachPanels(Layer::Panel *target_panel, const QPoint &target_offset, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, Synchronize *sync, bool *abort);
+	static void renderToSinglePanel(Layer::Panel *target_panel, const QPoint &target_offset, const Layer::Panel *input_panel, const QPoint &input_offset, const Layer *mask_layer, const QColor &brush_color, int opacity = 255, bool *abort = nullptr);
 public:
 	static void renderToLayer(Layer *target_layer, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, Synchronize *sync, bool *abort);
+	void clearSelection(Synchronize *sync);
 	void addSelection(const Layer &source, Synchronize *sync, bool *abort);
 	void subSelection(const Layer &source, Synchronize *sync, bool *abort);
 	QImage renderSelection(const QRect &r, Synchronize *sync, bool *abort) const;

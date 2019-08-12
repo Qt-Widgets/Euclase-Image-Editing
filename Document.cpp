@@ -77,7 +77,7 @@ void Document::renderToSinglePanel(Layer::Panel *target_panel, QPoint const &tar
 	if (w > 0 && h > 0) {
 		uint8_t *tmpmask = nullptr;
 		QImage maskimg;
-		if (mask_layer) {
+		if (mask_layer && !mask_layer->panels.empty()) {
 			Layer::Panel panel;
 			panel.offset_ = target_panel->offset_ + QPoint(sx0, sy0);
 			panel.image_ = QImage(w, h, QImage::Format_Grayscale8);

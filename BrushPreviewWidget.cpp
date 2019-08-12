@@ -33,12 +33,12 @@ BrushPreviewWidget::BrushPreviewWidget(QWidget *parent)
 
 void BrushPreviewWidget::paintEvent(QPaintEvent *)
 {
-	int w = width();
-	int h = height();
-	int cx = w / 2;
-	int cy = h / 2;
-	double x = cx + 0.5;
-	double y = cy + 0.5;
+	int w = std::max(0.0, width() / scale_);
+	int h = std::max(0.0, height() / scale_);
+	double cx = (w / 2) + 1.5;
+	double cy = (h / 2) + 1.5;
+	w += 2;
+	h += 2;
 
 	RoundBrushGenerator brush(brush_.size, brush_.softness);
 
@@ -75,15 +75,18 @@ void BrushPreviewWidget::paintEvent(QPaintEvent *)
 			QRgb *dst = reinterpret_cast<QRgb *>(image.scanLine(i));
 			double tx = j + 0.5;
 			double ty = i + 0.5;
-			double value = brush.level(tx - x, ty - y);
-			int v = (int)(value  * 255);
+			double value = brush.level(tx - cx, ty - cy);
+			int v = (int)(value * 255);
 			dst[j] = qRgb(v, v, v);
 		}
 	}
 #endif
 
 	QPainter pr(this);
-	pr.drawImage(0, 0, image);
+	int x = width() / 2 - cx * scale_;
+	int y = height() / 2 - cy * scale_;
+	pr.fillRect(0, 0, width(), height(), Qt::black);
+	pr.drawImage(QRect(x, y, w * scale_, h * scale_), image);
 }
 
 void BrushPreviewWidget::changeBrush()
@@ -132,4 +135,12 @@ MiraCL *BrushPreviewWidget::getCL()
 	return theApp->getCL();
 }
 #endif
+
+void BrushPreviewWidget::changeScale(double scale)
+{
+	scale_ = scale;
+	update();
+}
+
+
 

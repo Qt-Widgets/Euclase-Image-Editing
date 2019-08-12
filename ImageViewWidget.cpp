@@ -335,6 +335,8 @@ void ImageViewWidget::setImageScale(double scale, bool updateview)
 	if (scale > 32) scale = 32;
 	m->image_scale = scale;
 
+	emit scaleChanged(m->image_scale);
+
 	if (updateview) {
 		paintViewLater(true, true);
 	}

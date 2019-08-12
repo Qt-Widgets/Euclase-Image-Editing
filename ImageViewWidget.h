@@ -78,6 +78,8 @@ public:
 private slots:
 	void onRenderingCompleted(const QImage &image);
 	void onSelectionOutlineRenderingCompleted(const SelectionOutlineBitmap &data);
+signals:
+	void scaleChanged(double scale);
 };
 
 #endif // IMAGEVIEWWIDGET_H

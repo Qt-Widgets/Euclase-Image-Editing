@@ -96,7 +96,9 @@ private slots:
 	void on_action_trim_triggered();
 	void on_horizontalScrollBar_valueChanged(int value);
 	void on_horizontalSlider_size_valueChanged(int value);
-	void on_horizontalSlider_softness_valueChanged(int value);
+	void on_horizontalSlider_soft_valueChanged(int value);
+	void on_spinBox_brush_size_valueChanged(int value);
+	void on_spinBox_brush_soft_valueChanged(int value);
 	void on_verticalScrollBar_valueChanged(int value);
 	void on_horizontalSlider_rgb_r_valueChanged(int value);
 	void on_horizontalSlider_rgb_g_valueChanged(int value);

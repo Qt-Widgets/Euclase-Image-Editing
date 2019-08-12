@@ -11,6 +11,7 @@ class BrushPreviewWidget : public QWidget {
 	Q_OBJECT
 private:
 	Brush brush_;
+	double scale_ = 1;
 #if USE_OPENCL
 	MiraCL *getCL();
 	MiraCL::Program prog;
@@ -26,6 +27,8 @@ public:
 	void setBrushSoftness(double percent);
 	void setBrush(const Brush &b);
 	void setBrush_(const Brush &b);
+public slots:
+	void changeScale(double scale);
 protected:
 	void paintEvent(QPaintEvent *);
 };

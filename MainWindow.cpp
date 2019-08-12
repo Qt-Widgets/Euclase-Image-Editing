@@ -37,7 +37,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
 	ui->setupUi(this);
 	ui->horizontalSlider_size->setValue(1);
-	ui->horizontalSlider_softness->setValue(0);
+	ui->horizontalSlider_soft->setValue(0);
 	ui->widget_image_view->bind(this, ui->verticalScrollBar, ui->horizontalScrollBar);
 	ui->widget_image_view->setMouseTracking(true);
 
@@ -53,10 +53,14 @@ MainWindow::MainWindow(QWidget *parent)
 	ui->horizontalSlider_hsv_s->setColorType(ColorSlider::HSV_S);
 	ui->horizontalSlider_hsv_v->setColorType(ColorSlider::HSV_V);
 
-	ui->tabWidget->setCurrentWidget(ui->tab_color_rgb);
+	ui->tabWidget->setCurrentWidget(ui->tab_color_hsv);
 
-	connect(ui->widget_hue, &HueWidget::hueChanged, this, &MainWindow::onHueChanged);
+//	connect(ui->widget_hue, &HueWidget::hueChanged, this, &MainWindow::onHueChanged);
 	connect(ui->widget_color, &SaturationBrightnessWidget::changeColor, this, &MainWindow::setForegroundColor);
+
+	connect(ui->widget_image_view, &ImageViewWidget::scaleChanged, [&](double scale){
+		ui->widget_brush->changeScale(scale);
+	});
 
 	setForegroundColor(Qt::red);
 
@@ -121,11 +125,11 @@ void MainWindow::setForegroundColor(const QColor &color)
 	Set(color.saturation(), ui->horizontalSlider_hsv_s, ui->spinBox_hsv_s);
 	Set(color.value(), ui->horizontalSlider_hsv_v, ui->spinBox_hsv_v);
 
-	{
-		bool f = ui->widget_hue->blockSignals(true);
-		ui->widget_hue->setHue(color.hue());
-		ui->widget_hue->blockSignals(f);
-	}
+//	{
+//		bool f = ui->widget_hue->blockSignals(true);
+//		ui->widget_hue->setHue(color.hue());
+//		ui->widget_hue->blockSignals(f);
+//	}
 	{
 		bool f = ui->widget_color->blockSignals(true);
 		ui->widget_color->setHue(color.hue());
@@ -144,14 +148,20 @@ void MainWindow::setCurrentBrush(const Brush &brush)
 	m->brush_span = std::max(brush.size / 8.0, 0.5);
 
 	bool f1 = ui->horizontalSlider_size->blockSignals(true);
-	bool f2 = ui->horizontalSlider_softness->blockSignals(true);
+	bool f2 = ui->horizontalSlider_soft->blockSignals(true);
+	bool f3 = ui->spinBox_brush_size->blockSignals(true);
+	bool f4 = ui->spinBox_brush_soft->blockSignals(true);
 
 	ui->widget_brush->setBrush_(brush);
 
 	ui->horizontalSlider_size->setValue(brush.size);
-	ui->horizontalSlider_softness->setValue(brush.softness * 100);
+	ui->horizontalSlider_soft->setValue(brush.softness * 100);
+	ui->spinBox_brush_size->setValue(brush.size);
+	ui->spinBox_brush_soft->setValue(brush.softness * 100);
 
-	ui->horizontalSlider_softness->blockSignals(f2);
+	ui->spinBox_brush_soft->blockSignals(f4);
+	ui->spinBox_brush_size->blockSignals(f3);
+	ui->horizontalSlider_soft->blockSignals(f2);
 	ui->horizontalSlider_size->blockSignals(f1);
 }
 
@@ -224,7 +234,17 @@ void MainWindow::on_horizontalSlider_size_valueChanged(int value)
 	ui->widget_brush->setBrushSize(value);
 }
 
-void MainWindow::on_horizontalSlider_softness_valueChanged(int value)
+void MainWindow::on_horizontalSlider_soft_valueChanged(int value)
+{
+	ui->widget_brush->setBrushSoftness(value / 100.0);
+}
+
+void MainWindow::on_spinBox_brush_size_valueChanged(int value)
+{
+	ui->widget_brush->setBrushSize(value);
+}
+
+void MainWindow::on_spinBox_brush_soft_valueChanged(int value)
 {
 	ui->widget_brush->setBrushSoftness(value / 100.0);
 }
@@ -755,3 +775,4 @@ SelectionOutlineBitmap MainWindow::renderSelectionOutlineBitmap(bool *abort)
 {
 	return ui->widget_image_view->renderSelectionOutlineBitmap(abort);
 }
+

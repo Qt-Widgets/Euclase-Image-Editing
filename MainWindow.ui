@@ -541,7 +541,7 @@
             <number>2</number>
            </property>
            <item>
-            <widget class="QSlider" name="horizontalSlider_size">
+            <widget class="BrushSlider" name="horizontalSlider_size">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -560,7 +560,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QSlider" name="horizontalSlider_soft">
+            <widget class="BrushSlider" name="horizontalSlider_softness">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -603,7 +603,7 @@
              <item>
               <widget class="QLabel" name="label_8">
                <property name="text">
-                <string>Soft</string>
+                <string>Softness</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -611,7 +611,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QSpinBox" name="spinBox_brush_soft">
+              <widget class="QSpinBox" name="spinBox_brush_softness">
                <property name="maximum">
                 <number>100</number>
                </property>
@@ -908,7 +908,7 @@
      <x>0</x>
      <y>0</y>
      <width>824</width>
-     <height>18</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Edit">
@@ -1022,6 +1022,11 @@
    <extends>QSlider</extends>
    <header>ColorSlider.h</header>
   </customwidget>
+  <customwidget>
+   <class>BrushSlider</class>
+   <extends>QSlider</extends>
+   <header>BrushSlider.h</header>
+  </customwidget>
  </customwidgets>
  <tabstops>
   <tabstop>toolButton_scroll</tabstop>
@@ -1043,9 +1048,9 @@
   <tabstop>spinBox_rgb_b</tabstop>
   <tabstop>tabWidget_3</tabstop>
   <tabstop>horizontalSlider_size</tabstop>
-  <tabstop>horizontalSlider_soft</tabstop>
+  <tabstop>horizontalSlider_softness</tabstop>
   <tabstop>spinBox_brush_size</tabstop>
-  <tabstop>spinBox_brush_soft</tabstop>
+  <tabstop>spinBox_brush_softness</tabstop>
  </tabstops>
  <resources/>
  <connections/>

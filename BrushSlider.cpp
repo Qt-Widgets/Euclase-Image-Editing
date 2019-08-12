@@ -1,37 +1,37 @@
-#include "ColorSlider.h"
+#include "BrushSlider.h"
 #include <functional>
 #include <QPainter>
 #include <QKeyEvent>
 
-ColorSlider::ColorSlider(QWidget *parent)
+BrushSlider::BrushSlider(QWidget *parent)
 	: QSlider(parent)
 {
 	color_ = Qt::white;
-	setColorType(HSV_H);
+	setVisualType(SIZE);
 }
 
-ColorSlider::ColorType ColorSlider::colorType() const
+BrushSlider::VisualType BrushSlider::visualType() const
 {
-	return color_type_;
+	return visual_type_;
 }
 
-void ColorSlider::setColorType(ColorType type)
+void BrushSlider::setVisualType(VisualType type)
 {
-	color_type_ = type;
+	visual_type_ = type;
 
-	int max = (color_type_ == HSV_H) ? 359 : 255;
+	int max = (visual_type_ == SIZE) ? 1000 : 100;
 	setMaximum(max);
 
 	update();
 }
 
-void ColorSlider::setColor(QColor const &color)
+void BrushSlider::setColor(QColor const &color)
 {
 	color_ = color;
 	update();
 }
 
-void ColorSlider::updateGeometry()
+void BrushSlider::updateGeometry()
 {
 	handle_size_ = height();
 
@@ -45,48 +45,37 @@ void ColorSlider::updateGeometry()
 	handle_rect_ = QRect(handle_x, 0, handle_size_, handle_size_);
 }
 
-void ColorSlider::resizeEvent(QResizeEvent *e)
+void BrushSlider::resizeEvent(QResizeEvent *e)
 {
 	QWidget::resizeEvent(e);
 	updateGeometry();
 }
 
-void ColorSlider::paintEvent(QPaintEvent *)
+void BrushSlider::paintEvent(QPaintEvent *)
 {
+	if (image_.isNull()) {
+		switch (visual_type_) {
+		case VisualType::SIZE:
+			image_.load(":/image/size.png");
+			break;
+		case VisualType::SOFTNESS:
+			image_.load(":/image/softness.png");
+			break;
+		}
+	}
+
+
 	updateGeometry();
 	int val = value();
 	int max = maximum();
 
-	std::function<QColor(int t)> color;
-
-	auto rgb_r = [&](int r){ return QColor(r, color_.green(), color_.blue()); };
-	auto rgb_g = [&](int g){ return QColor(color_.red(), g, color_.blue()); };
-	auto rgb_b = [&](int b){ return QColor(color_.red(), color_.green(), b); };
-	auto hsv_h = [&](int h){ return QColor::fromHsv(h, 255, 255); };
-	auto hsv_s = [&](int s){ return QColor::fromHsv(color_.hue(), s, color_.value()); };
-	auto hsv_v = [&](int v){ return QColor::fromHsv(color_.hue(), color_.saturation(), v); };
-	auto unknown = [&](int i){ return QColor(i, i, i); };
-
-	switch (color_type_) {
-	case RGB_R: color = rgb_r; break;
-	case RGB_G: color = rgb_g; break;
-	case RGB_B: color = rgb_b; break;
-	case HSV_H: color = hsv_h; break;
-	case HSV_S: color = hsv_s; break;
-	case HSV_V: color = hsv_v; break;
-	default: color = unknown; break;
-	}
-
 	int w = slider_rect_.width();
-	QImage img(w, 1, QImage::Format_ARGB32);
-	for (int i = 0; i < w; i++) {
-		int t = i * (max + 1) / w;
-		reinterpret_cast<QRgb *>(img.scanLine(0))[i] = color(t).rgb();
-	}
-
 	QPainter pr(this);
 	pr.fillRect(slider_rect_.adjusted(-1, -1, 1, 1), Qt::black);
-	pr.drawImage(slider_rect_, img, img.rect());
+	{
+		QImage img = image_.scaled(slider_rect_.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+		pr.drawImage(slider_rect_.topLeft(), img);
+	}
 	pr.setRenderHint(QPainter::Antialiasing);
 	{
 		QPainterPath path;
@@ -104,16 +93,14 @@ void ColorSlider::paintEvent(QPaintEvent *)
 	pr.setPen(Qt::NoPen);
 	pr.setBrush(Qt::black);
 	pr.drawEllipse(handle_rect_.adjusted(3, 3, -3, -3));
-//	pr.setBrush(color(val));
-//	pr.drawEllipse(handle_rect_.adjusted(4, 4, -4, -4));
 }
 
-void ColorSlider::offset(int delta)
+void BrushSlider::offset(int delta)
 {
 	setValue(value() + delta);
 }
 
-void ColorSlider::keyPressEvent(QKeyEvent *e)
+void BrushSlider::keyPressEvent(QKeyEvent *e)
 {
 	int k = e->key();
 
@@ -139,7 +126,7 @@ void ColorSlider::keyPressEvent(QKeyEvent *e)
 	}
 }
 
-void ColorSlider::mousePressEvent(QMouseEvent *e)
+void BrushSlider::mousePressEvent(QMouseEvent *e)
 {
 	int x = e->pos().x();
 	if (x < handle_rect_.x()) {
@@ -155,7 +142,7 @@ void ColorSlider::mousePressEvent(QMouseEvent *e)
 	mouse_press_pos_ = e->pos();
 }
 
-void ColorSlider::mouseMoveEvent(QMouseEvent *e)
+void BrushSlider::mouseMoveEvent(QMouseEvent *e)
 {
 	if (e->buttons() & Qt::LeftButton) {
 		double slider_w = slider_rect_.width();

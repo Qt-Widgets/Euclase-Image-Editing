@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>cl/example.cl</file>
+        <file>image/size.png</file>
+        <file>image/softness.png</file>
     </qresource>
 </RCC>

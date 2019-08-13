@@ -296,7 +296,8 @@ void MainWindow::on_action_file_save_as_triggered()
 {
 	QString path = QFileDialog::getSaveFileName(this);
 	if (!path.isEmpty()) {
-		QImage img = document()->current_layer()->image();
+		QSize sz = document()->current_layer()->size();
+		QImage img = document()->renderToLayer(QRect(0, 0, sz.width(), sz.height()), false, synchronizer(), nullptr);
 		img.save(path);
 	}
 }

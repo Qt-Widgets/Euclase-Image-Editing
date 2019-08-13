@@ -31,11 +31,9 @@ private:
 
 	enum class Operation {
 		PaintToCurrentLayer,
-		SetSelection,
-		AddSelection,
-		SubSelection,
 	};
 	void paintLayer(Operation op, const Document::Layer &layer);
+	void changeSelection(Document::SelectionOperation op);
 
 	void drawBrush(bool one);
 	void test();

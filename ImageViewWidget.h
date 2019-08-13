@@ -19,7 +19,7 @@ private:
 	Document *document();
 	Document const *document() const;
 
-	bool isValidImage() const;
+//	bool isValidImage() const;
 	QSize imageSize() const;
 
 	QSizeF imageScrollRange() const;
@@ -57,14 +57,10 @@ public:
 	void showRect(const QPointF &start, const QPointF &end);
 	void hideRect();
 
-
-	void clear();
-
 	void refrectScrollBar();
 
 	void scaleFit(double ratio = 1.0);
 	void scale100();
-
 
 	void zoomIn();
 	void zoomOut();

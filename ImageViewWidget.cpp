@@ -217,14 +217,6 @@ void ImageViewWidget::refrectScrollBar()
 	internalScrollImage(x, y, true);
 }
 
-void ImageViewWidget::clear()
-{
-	m->mime_type = QString();
-	document()->current_layer()->image() = QImage();
-	setMouseTracking(false);
-	paintViewLater(true, true);
-}
-
 QSizeF ImageViewWidget::imageScrollRange() const
 {
 	QSize sz = imageSize();
@@ -257,11 +249,6 @@ QBrush ImageViewWidget::getTransparentBackgroundBrush()
 		m->transparent_pixmap = QPixmap(":/image/transparent.png");
 	}
 	return m->transparent_pixmap;
-}
-
-bool ImageViewWidget::isValidImage() const
-{
-	return !document()->current_layer()->image().isNull();
 }
 
 QSize ImageViewWidget::imageSize() const
@@ -515,28 +502,24 @@ void ImageViewWidget::mousePressEvent(QMouseEvent *e)
 
 void ImageViewWidget::mouseMoveEvent(QMouseEvent *)
 {
-	if (isValidImage()) {
-		QPoint pos = mapFromGlobal(QCursor::pos());
-		if (m->left_button && hasFocus()) {
-			if (!mainwindow()->onMouseMove(pos.x(), pos.y(), true)) {
-				clearSelectionOutline();
-				int delta_x = pos.x() - m->mouse_press_pos.x();
-				int delta_y = pos.y() - m->mouse_press_pos.y();
-				scrollImage(m->scroll_origin_x - delta_x, m->scroll_origin_y - delta_y, true);
-			}
+	QPoint pos = mapFromGlobal(QCursor::pos());
+	if (m->left_button && hasFocus()) {
+		if (!mainwindow()->onMouseMove(pos.x(), pos.y(), true)) {
+			clearSelectionOutline();
+			int delta_x = pos.x() - m->mouse_press_pos.x();
+			int delta_y = pos.y() - m->mouse_press_pos.y();
+			scrollImage(m->scroll_origin_x - delta_x, m->scroll_origin_y - delta_y, true);
 		}
-		m->cursor_anchor_pos = mapFromViewportToDocument(pos);
-		m->wheel_delta = 0;
 	}
+	m->cursor_anchor_pos = mapFromViewportToDocument(pos);
+	m->wheel_delta = 0;
 }
 
 void ImageViewWidget::mouseReleaseEvent(QMouseEvent *)
 {
-	if (isValidImage()) {
-		QPoint pos = mapFromGlobal(QCursor::pos());
-		if (m->left_button && hasFocus()) {
-			mainwindow()->onMouseLeftButtonRelase(pos.x(), pos.y(), true);
-		}
+	QPoint pos = mapFromGlobal(QCursor::pos());
+	if (m->left_button && hasFocus()) {
+		mainwindow()->onMouseLeftButtonRelase(pos.x(), pos.y(), true);
 	}
 	m->left_button = false;
 }

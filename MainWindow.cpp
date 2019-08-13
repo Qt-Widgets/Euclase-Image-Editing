@@ -181,20 +181,23 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 	document()->current_layer()->create(w, h);
 
 	Document::Layer layer(w, h);
-	layer.image() = image;
+	layer.setImage(QPoint(0, 0), image);
 	document()->renderToLayer(document()->current_layer(), layer, nullptr, QColor(), ui->widget_image_view->synchronizer(), nullptr);
 
-	if (0) {
-		int w = documentWidth();
-		int h = documentHeight();
-		document()->selection_layer()->image() = QImage(w, h, QImage::Format_Grayscale8);
-		document()->selection_layer()->image().fill(Qt::black);
-		QPainter pr(&document()->selection_layer()->image());
-		pr.setRenderHint(QPainter::Antialiasing);
-		pr.setPen(Qt::NoPen);
-		pr.setBrush(Qt::white);
-		pr.drawEllipse(0, 0, w, h);
-	}
+//	if (1) {
+//		int w = documentWidth();
+//		int h = documentHeight();
+//		QImage image(w, h, QImage::Format_Grayscale8);
+//		image.fill(Qt::black);
+//		{
+//			QPainter pr(&image);
+//			pr.setRenderHint(QPainter::Antialiasing);
+//			pr.setPen(Qt::NoPen);
+//			pr.setBrush(Qt::white);
+//			pr.drawEllipse(0, 0, w, h);
+//		}
+//		document()->selection_layer()->image() = image;
+//	}
 	ui->widget_image_view->update();
 
 	if (fitview) {
@@ -259,7 +262,7 @@ void MainWindow::onHueChanged(int hue)
 
 void MainWindow::on_action_resize_triggered()
 {
-	QImage srcimage = document()->current_layer()->image();
+	QImage srcimage = renderFilterTargetImage();
 	QSize sz = srcimage.size();
 
 	ResizeDialog dlg(this);
@@ -345,7 +348,7 @@ void MainWindow::on_action_filter_blur_triggered()
 
 void MainWindow::on_action_filter_antialias_triggered()
 {
-	QImage image = document()->current_layer()->image();
+	QImage image = renderFilterTargetImage();
 	filter_antialias(&image);
 	setImage(image, false);
 }
@@ -397,22 +400,22 @@ void MainWindow::paintLayer(Operation op, Document::Layer const &layer)
 		document()->paintToCurrentLayer(layer, foregroundColor(), ui->widget_image_view->synchronizer(), nullptr);
 		return;
 	}
-	if (op == Operation::SetSelection) {
-		clearSelection();
-		document()->addSelection(layer, ui->widget_image_view->synchronizer(), nullptr);
-		onSelectionChanged();
-		return;
-	}
-	if (op == Operation::AddSelection) {
-		document()->addSelection(layer, ui->widget_image_view->synchronizer(), nullptr);
-		onSelectionChanged();
-		return;
-	}
-	if (op == Operation::SubSelection) {
-		document()->subSelection(layer, ui->widget_image_view->synchronizer(), nullptr);
-		onSelectionChanged();
-		return;
-	}
+}
+
+void MainWindow::changeSelection(Document::SelectionOperation op)
+{
+	int x0 = floor(m->button_pressed_start_pt.x());
+	int y0 = floor(m->button_pressed_start_pt.y());
+	int x1 = floor(m->button_pressed_end_pt.x());
+	int y1 = floor(m->button_pressed_end_pt.y());
+	if (x0 > x1) std::swap(x0, x1);
+	if (y0 > y1) std::swap(y0, y1);
+	int x = x0;
+	int y = y0;
+	int w = x1 - x0 + 1;
+	int h = y1 - y0 + 1;
+	document()->changeSelection(op, QRect(x, y, w, h), synchronizer());
+	onSelectionChanged();
 }
 
 void MainWindow::drawBrush(bool one)
@@ -438,8 +441,7 @@ void MainWindow::drawBrush(bool one)
 			}
 		}
 		Document::Layer layer(image.width(), image.height());
-		layer.image() = image;
-		layer.offset() = QPoint(x0, y0);
+		layer.setImage(QPoint(x0, y0), image);
 		paintLayer(Operation::PaintToCurrentLayer, layer);
 	};
 
@@ -575,23 +577,7 @@ bool MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
 	if (tool == Tool::Rect) {
 		if (leftbutton) {
 			ui->widget_image_view->hideRect();
-			int x0 = floor(m->button_pressed_start_pt.x());
-			int y0 = floor(m->button_pressed_start_pt.y());
-			int x1 = floor(m->button_pressed_end_pt.x());
-			int y1 = floor(m->button_pressed_end_pt.y());
-			if (x0 > x1) std::swap(x0, x1);
-			if (y0 > y1) std::swap(y0, y1);
-			int x = x0;
-			int y = y0;
-			int w = x1 - x0 + 1;
-			int h = y1 - y0 + 1;
-			QImage image(w, h, QImage::Format_Grayscale8);
-			image.fill(Qt::white);
-			Document::Layer layer(0, 0);
-			auto panel = layer.addPanel();
-			panel->offset_ = QPoint(x, y);
-			panel->image_ = image;
-			paintLayer(Operation::SetSelection, layer);
+			changeSelection(Document::SelectionOperation::SetSelection);
 			updateImageView();
 			return true;
 		}
@@ -713,26 +699,6 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 }
 
-void MainWindow::test()
-{
-	QImage image(100, 100, QImage::Format_Grayscale8);
-	image.fill(Qt::black);
-	{
-		QPainter pr(&image);
-		pr.setRenderHint(QPainter::Antialiasing);
-		pr.setPen(Qt::NoPen);
-		pr.setBrush(Qt::white);
-		pr.drawEllipse(0, 0, 99, 99);
-	}
-
-	Document::Layer layer(image.width(), image.height());
-	layer.image() = image;
-	layer.offset() = QPoint(14, 14);
-	paintLayer(Operation::PaintToCurrentLayer, layer);
-
-	updateImageView();
-}
-
 void MainWindow::changeTool(Tool tool)
 {
 	m->current_tool = tool;
@@ -782,4 +748,8 @@ SelectionOutlineBitmap MainWindow::renderSelectionOutlineBitmap(bool *abort)
 
 
 
+
+void MainWindow::test()
+{
+}
 

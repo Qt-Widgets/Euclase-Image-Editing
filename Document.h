@@ -20,6 +20,11 @@ public:
 			QPoint offset_;
 			QImage image_;
 
+			QPoint offset() const
+			{
+				return offset_;
+			}
+
 			bool isRGBA8888() const
 			{
 				return image_.format() == QImage::Format_RGBA8888;
@@ -76,6 +81,11 @@ public:
 			}
 		}
 
+		QPoint const &offset() const
+		{
+			return offset_;
+		}
+
 		int width() const
 		{
 			return width_;
@@ -98,36 +108,14 @@ public:
 			}
 		}
 
-		bool isRGBA8888() const
+		void setImage(QPoint const &offset, QImage const &image)
 		{
-			return image().format() == QImage::Format_RGBA8888;
+			clear(nullptr);
+			addPanel();
+			offset_ = offset;
+			panels[0]->image_ = image;
 		}
 
-		bool isGrayscale8() const
-		{
-			return image().format() == QImage::Format_Grayscale8;
-		}
-
-		QImage &image()
-		{
-			if (panels.empty()) {
-				addPanel();
-			}
-			return panels[0]->image_;
-		}
-		QPoint &offset()
-		{
-			return offset_;
-		}
-
-		QImage const &image() const
-		{
-			return panels[0]->image_;
-		}
-		QPoint const &offset() const
-		{
-			return offset_;
-		}
 		QRect rect() const;
 	};
 
@@ -152,11 +140,17 @@ private:
 	static void renderToEachPanels(Layer::Panel *target_panel, const QPoint &target_offset, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, Synchronize *sync, bool *abort);
 	static void renderToSinglePanel(Layer::Panel *target_panel, const QPoint &target_offset, const Layer::Panel *input_panel, const QPoint &input_offset, const Layer *mask_layer, const QColor &brush_color, int opacity = 255, bool *abort = nullptr);
 public:
+	enum class SelectionOperation {
+		SetSelection,
+		AddSelection,
+		SubSelection,
+	};
 	static void renderToLayer(Layer *target_layer, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, Synchronize *sync, bool *abort);
 	void clearSelection(Synchronize *sync);
 	void addSelection(const Layer &source, Synchronize *sync, bool *abort);
 	void subSelection(const Layer &source, Synchronize *sync, bool *abort);
 	QImage renderSelection(const QRect &r, Synchronize *sync, bool *abort) const;
+	void changeSelection(SelectionOperation op, QRect const &rect, Synchronize *sync);
 };
 
 #endif // DOCUMENT_H

@@ -29,7 +29,7 @@ struct ImageViewWidget::Private {
 	QScrollBar *v_scroll_bar = nullptr;
 	QScrollBar *h_scroll_bar = nullptr;
 	QString mime_type;
-	Synchronize sync;
+	QMutex sync;
 
 	double image_scroll_x = 0;
 	double image_scroll_y = 0;
@@ -131,7 +131,7 @@ QPointF ImageViewWidget::mapFromDocumentToViewport(QPointF const &pos)
 	return QPointF(x, y);
 }
 
-Synchronize *ImageViewWidget::synchronizer()
+QMutex *ImageViewWidget::synchronizer()
 {
 	return &m->sync;
 }

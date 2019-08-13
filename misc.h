@@ -39,6 +39,11 @@ public:
 	static QString makeProxyServerURL(QString text);
 	static QPoint contextMenuPos(QWidget *w, QContextMenuEvent *e);
 	static bool isExecutable(QString const &cmd);
+
+	template <typename T> static T clamp(T v, T min, T max)
+	{
+		return std::max(min, std::min(max, v));
+	}
 };
 
 class OverrideWaitCursor_ {

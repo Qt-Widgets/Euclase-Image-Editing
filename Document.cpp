@@ -161,10 +161,10 @@ void Document::renderToEachPanels_(Layer::Panel *target_panel, QPoint const &tar
 	}
 }
 
-void Document::renderToEachPanels(Layer::Panel *target_panel, QPoint const &target_offset, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color, int opacity, Synchronize *sync, bool *abort)
+void Document::renderToEachPanels(Layer::Panel *target_panel, QPoint const &target_offset, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color, int opacity, QMutex *sync, bool *abort)
 {
 	if (sync) {
-		QMutexLocker lock(&sync->mutex);
+		QMutexLocker lock(sync);
 		renderToEachPanels(target_panel, target_offset, input_layer, mask_layer, brush_color, opacity, nullptr, abort);
 		return;
 	}
@@ -172,7 +172,7 @@ void Document::renderToEachPanels(Layer::Panel *target_panel, QPoint const &targ
 	renderToEachPanels_(target_panel, target_offset, input_layer, mask_layer, brush_color, opacity, abort);
 }
 
-void Document::renderToLayer(Layer *target_layer, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color, Synchronize *sync, bool *abort)
+void Document::renderToLayer(Layer *target_layer, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color, QMutex *sync, bool *abort)
 {
 #if 0
 	target_layer->eachPanel([&](Layer::Panel *panel){
@@ -183,44 +183,44 @@ void Document::renderToLayer(Layer *target_layer, Layer const &input_layer, Laye
 		int count = 0;
 		for (Layer::PanelPtr &panel : target_layer->panels) {
 			if (abort && *abort) return;
-			if (sync) sync->mutex.lock();
+			if (sync) sync->lock();
 			renderToSinglePanel(panel.get(), target_layer->offset(), input_panel.get(), input_layer.offset(), mask_layer, brush_color, 255, abort);
-			if (sync) sync->mutex.unlock();
+			if (sync) sync->unlock();
 			count++;
 		}
 		if (count == 0) {
 			Layer::PanelPtr panel = std::make_shared<Layer::Panel>();
 			panel->image_ = input_panel->image_.copy();
 			panel->offset_ = input_panel->offset();
-			if (sync) sync->mutex.lock();
+			if (sync) sync->lock();
 			target_layer->panels.push_back(panel);
-			if (sync) sync->mutex.unlock();
+			if (sync) sync->unlock();
 		}
 	}
 #endif
 }
 
-void Document::clearSelection(Synchronize *sync)
+void Document::clearSelection(QMutex *sync)
 {
 	selection_layer()->clear(sync);
 }
 
-void Document::paintToCurrentLayer(Layer const &source, QColor const &brush_color, Synchronize *sync, bool *abort)
+void Document::paintToCurrentLayer(Layer const &source, QColor const &brush_color, QMutex *sync, bool *abort)
 {
 	renderToLayer(&m->current_layer, source, selection_layer(), brush_color, sync, abort);
 }
 
-void Document::addSelection(Layer const &source, Synchronize *sync, bool *abort)
+void Document::addSelection(Layer const &source, QMutex *sync, bool *abort)
 {
 	renderToLayer(selection_layer(), source, nullptr, Qt::white, sync, abort);
 }
 
-void Document::subSelection(Layer const &source, Synchronize *sync, bool *abort)
+void Document::subSelection(Layer const &source, QMutex *sync, bool *abort)
 {
 	renderToLayer(selection_layer(), source, nullptr, Qt::black, sync, abort);
 }
 
-QImage Document::renderSelection(const QRect &r, Synchronize *sync, bool *abort) const
+QImage Document::renderSelection(const QRect &r, QMutex *sync, bool *abort) const
 {
 	Layer::Panel panel;
 	panel.image_ = QImage(r.width(), r.height(), QImage::Format_Grayscale8);
@@ -230,7 +230,7 @@ QImage Document::renderSelection(const QRect &r, Synchronize *sync, bool *abort)
 	return panel.image_;
 }
 
-QImage Document::renderToLayer(const QRect &r, bool quickmask, Synchronize *sync, bool *abort) const
+QImage Document::renderToLayer(const QRect &r, bool quickmask, QMutex *sync, bool *abort) const
 {
 	Layer::Panel panel;
 	panel.image_ = QImage(r.width(), r.height(), QImage::Format_RGBA8888);
@@ -303,7 +303,7 @@ QRect Document::Layer::rect() const
 	return rect;
 }
 
-void Document::changeSelection(SelectionOperation op, const QRect &rect, Synchronize *sync)
+void Document::changeSelection(SelectionOperation op, const QRect &rect, QMutex *sync)
 {
 	Document::Layer layer(0, 0);
 	auto panel = layer.addPanel();

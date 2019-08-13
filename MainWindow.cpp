@@ -91,7 +91,7 @@ Document const *MainWindow::document() const
 	return &m->doc;
 }
 
-Synchronize *MainWindow::synchronizer()
+QMutex *MainWindow::synchronizer()
 {
 	return ui->widget_image_view->synchronizer();
 }

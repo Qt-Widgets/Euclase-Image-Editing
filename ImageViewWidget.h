@@ -52,7 +52,7 @@ public:
 	QPointF mapFromViewportToDocument(const QPointF &pos);
 	QPointF mapFromDocumentToViewport(QPointF const &pos);
 
-	Synchronize *synchronizer();
+	QMutex *synchronizer();
 
 	void showRect(const QPointF &start, const QPointF &end);
 	void hideRect();

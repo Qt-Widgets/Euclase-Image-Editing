@@ -2,6 +2,7 @@
 #include <functional>
 #include <QPainter>
 #include <QKeyEvent>
+#include "misc.h"
 
 BrushSlider::BrushSlider(QWidget *parent)
 	: QSlider(parent)
@@ -29,6 +30,17 @@ void BrushSlider::setColor(QColor const &color)
 {
 	color_ = color;
 	update();
+}
+
+void BrushSlider::mouseDoubleClickEvent(QMouseEvent *e)
+{
+	int w = slider_rect_.width();
+	if (w > 1) {
+		double x = (e->pos().x() - slider_rect_.x()) * (maximum() - minimum()) / (w - 1);
+		int v = floor(x + 0.5);
+		v = misc::clamp(v, minimum(), maximum());
+		setValue(v);
+	}
 }
 
 void BrushSlider::updateGeometry()

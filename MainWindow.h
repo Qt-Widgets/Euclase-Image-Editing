@@ -58,7 +58,7 @@ public:
 	Document *document();
 	Document const *document() const;
 
-	Synchronize *synchronizer();
+	QMutex *synchronizer();
 
 	void fitView();
 	QImage renderImage(const QRect &r, bool quickmask, bool *abort) const;

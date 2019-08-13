@@ -35,6 +35,10 @@ public:
 	ColorType colorType() const;
 	void setColorType(ColorType colorType);
 	void setColor(const QColor &color);
+
+	// QWidget interface
+protected:
+	void mouseDoubleClickEvent(QMouseEvent *e);
 };
 
 #endif // COLORSLIDER_H

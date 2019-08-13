@@ -32,6 +32,10 @@ public:
 	VisualType visualType() const;
 	void setVisualType(VisualType visualType);
 	void setColor(const QColor &color);
+
+	// QWidget interface
+protected:
+	void mouseDoubleClickEvent(QMouseEvent *);
 };
 
 #endif // BRUSHSLIDER_H

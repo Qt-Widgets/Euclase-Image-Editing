@@ -174,11 +174,6 @@ void Document::renderToEachPanels(Layer::Image *target_panel, QPoint const &targ
 
 void Document::renderToLayer(Layer *target_layer, Layer const &input_layer, Layer *mask_layer, QColor const &brush_color, QMutex *sync, bool *abort)
 {
-#if 0
-	target_layer->eachPanel([&](Layer::Panel *panel){
-		renderToEachPanels(panel, input_layer, mask_layer, brush_color, 255, sync, abort);
-	});
-#else
 	for (Layer::PanelPtr const &input_panel : input_layer.panels) {
 		if (input_panel.isImage()) {
 			int count = 0;
@@ -201,7 +196,6 @@ void Document::renderToLayer(Layer *target_layer, Layer const &input_layer, Laye
 			}
 		}
 	}
-#endif
 }
 
 void Document::clearSelection(QMutex *sync)

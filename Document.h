@@ -11,7 +11,17 @@ class Document {
 public:
 	class Layer {
 	public:
-		struct Panel {
+		enum class Type {
+			Image,
+			Block,
+		};
+		struct Header {
+			unsigned int ref_;
+			Type type_;
+		};
+
+		struct Image {
+			Header header_;
 			QPoint offset_;
 			QImage image_;
 
@@ -30,7 +40,147 @@ public:
 				return image_.format() == QImage::Format_Grayscale8;
 			}
 		};
-		using PanelPtr = std::shared_ptr<Panel>;
+		struct Block {
+			Header header_;
+			int x = 0;
+			int y = 0;
+
+			QPoint offset() const
+			{
+				return QPoint(x * 64, y * 64);
+			}
+		};
+
+		class PanelPtr {
+		private:
+			Header *object_ = nullptr;
+		public:
+			PanelPtr()
+			{
+			}
+			PanelPtr(PanelPtr const &r)
+			{
+				assign(r.object_);
+			}
+			void operator = (PanelPtr const &r)
+			{
+				assign(r.object_);
+			}
+			~PanelPtr()
+			{
+				reset();
+			}
+			void reset()
+			{
+				assign(nullptr);
+			}
+			void assign(Header *p)
+			{
+				if (p == object_) {
+					return;
+				}
+				if (p) {
+					p->ref_++;
+				}
+				if (object_) {
+					if (object_->ref_ > 1) {
+						object_->ref_--;
+					} else {
+						switch (object_->type_) {
+						case Type::Image:
+							reinterpret_cast<Image *>(object_)->~Image();
+							break;
+						case Type::Block:
+							reinterpret_cast<Block *>(object_)->~Block();
+							break;
+						}
+						free(reinterpret_cast<void *>(object_));
+					}
+				}
+				object_ = p;
+			}
+
+			Image *image()
+			{
+				if (object_ && reinterpret_cast<Header *>(object_)->type_ == Type::Image) {
+					return reinterpret_cast<Image *>(object_);
+				}
+				return nullptr;
+			}
+			Image const *image() const
+			{
+				if (object_ && reinterpret_cast<Header *>(object_)->type_ == Type::Image) {
+					return reinterpret_cast<Image *>(object_);
+				}
+				return nullptr;
+			}
+			Image *operator -> ()
+			{
+				return image();
+			}
+			Image const *operator -> () const
+			{
+				return image();
+			}
+			operator Image *()
+			{
+				return image();
+			}
+			operator const Image *() const
+			{
+				return image();
+			}
+
+			Block *block()
+			{
+				if (object_ && reinterpret_cast<Header *>(object_)->type_ == Type::Block) {
+					return reinterpret_cast<Block *>(object_);
+				}
+				return nullptr;
+			}
+			Block const *block() const
+			{
+				if (object_ && reinterpret_cast<Header *>(object_)->type_ == Type::Block) {
+					return reinterpret_cast<Block *>(object_);
+				}
+				return nullptr;
+			}
+//			Block *operator -> ()
+//			{
+//				return block();
+//			}
+//			Block const *operator -> () const
+//			{
+//				return block();
+//			}
+			operator Block *()
+			{
+				return block();
+			}
+			operator const Block *() const
+			{
+				return block();
+			}
+
+			bool isImage() const
+			{
+				return image();
+			}
+			bool isBlock() const
+			{
+				return block();
+			}
+			static PanelPtr makePanel()
+			{
+				void *o = malloc(sizeof(Image));
+				if (!o) throw std::bad_alloc();
+				new(o) Image();
+				PanelPtr p;
+				p.assign(reinterpret_cast<Header *>(o));
+				return p;
+			}
+		};
+
 		std::vector<PanelPtr> panels;
 
 		int width_ = 0;
@@ -50,7 +200,7 @@ public:
 
 		PanelPtr addPanel()
 		{
-			auto panel = std::make_shared<Panel>();
+			auto panel = PanelPtr::makePanel();
 			panels.push_back(panel);
 			return panel;
 		}
@@ -96,18 +246,18 @@ public:
 			return QSize(width(), height());
 		}
 
-		void eachPanel(std::function<void(Panel *)> fn)
+		void eachPanel(std::function<void(Image *)> fn)
 		{
 			for (PanelPtr &ptr : panels) {
-				fn(ptr.get());
+				fn(ptr.image());
 			}
 		}
 
 		void setImage(QPoint const &offset, QImage const &image)
 		{
 			clear(nullptr);
-			addPanel();
 			offset_ = offset;
+			addPanel();
 			panels[0]->image_ = image;
 		}
 
@@ -131,9 +281,9 @@ public:
 
 	QImage renderToLayer(QRect const &r, bool quickmask, QMutex *sync, bool *abort) const;
 private:
-	static void renderToEachPanels_(Layer::Panel *target_panel, const QPoint &target_offset, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, bool *abort);
-	static void renderToEachPanels(Layer::Panel *target_panel, const QPoint &target_offset, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, QMutex *sync, bool *abort);
-	static void renderToSinglePanel(Layer::Panel *target_panel, const QPoint &target_offset, const Layer::Panel *input_panel, const QPoint &input_offset, const Layer *mask_layer, const QColor &brush_color, int opacity = 255, bool *abort = nullptr);
+	static void renderToEachPanels_(Layer::Image *target_panel, const QPoint &target_offset, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, bool *abort);
+	static void renderToEachPanels(Layer::Image *target_panel, const QPoint &target_offset, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, QMutex *sync, bool *abort);
+	static void renderToSinglePanel(Layer::Image *target_panel, const QPoint &target_offset, const Layer::Image *input_panel, const QPoint &input_offset, const Layer *mask_layer, const QColor &brush_color, int opacity = 255, bool *abort = nullptr);
 public:
 	enum class SelectionOperation {
 		SetSelection,

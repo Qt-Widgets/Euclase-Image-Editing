@@ -16,8 +16,8 @@ public:
 			Block,
 		};
 		struct Header {
-			unsigned int ref_;
-			Type type_;
+			unsigned int ref_ = 0;
+			Type type_ = Type::Image;
 		};
 
 		struct Image {

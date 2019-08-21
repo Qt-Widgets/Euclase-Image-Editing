@@ -13,6 +13,7 @@
 #include <QKeyEvent>
 #include <QDebug>
 #include <QBitmap>
+#include <QScreen>
 
 struct MainWindow::Private {
 	Document doc;
@@ -73,6 +74,8 @@ MainWindow::MainWindow(QWidget *parent)
 		b.softness = 1.0;
 		setCurrentBrush(b);
 	}
+
+	ui->widget_image_view->setFocus();
 }
 
 MainWindow::~MainWindow()
@@ -690,13 +693,29 @@ void MainWindow::on_spinBox_hsv_v_valueChanged(int value)
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
+	bool ctrl = (event->modifiers() & Qt::ControlModifier);
 	int k = event->key();
-	if (k == Qt::Key_T) {
-		if (event->modifiers() & Qt::ControlModifier) {
+	switch (k) {
+	case Qt::Key_T:
+		if (ctrl) {
 			test();
 		}
+		return;
+	case Qt::Key_P:
+		if (ctrl) {
+			QList<QScreen *> list = QApplication::screens();
+			if (!list.empty()) {
+				QScreen *s = list.front();
+				if (s) {
+					QPixmap pm = s->grabWindow(winId());
+					QImage im = pm.toImage().convertToFormat(QImage::Format_RGBA8888);
+					setImage(im, true);
+				}
+			}
+		}
+		return;
 	}
-
+	QMainWindow::keyPressEvent(event);
 }
 
 void MainWindow::changeTool(Tool tool)

@@ -180,7 +180,7 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 {
 	int w = image.width();
 	int h = image.height();
-
+//w = h = 64;
 	document()->current_layer()->create(w, h);
 
 	Document::Layer layer(w, h);

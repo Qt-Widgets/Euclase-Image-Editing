@@ -30,6 +30,16 @@ public:
 				return offset_;
 			}
 
+			int width() const
+			{
+				return image_.width();
+			}
+
+			int height() const
+			{
+				return image_.height();
+			}
+
 			bool isRGBA8888() const
 			{
 				return image_.format() == QImage::Format_RGBA8888;

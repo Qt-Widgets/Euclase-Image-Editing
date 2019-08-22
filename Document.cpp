@@ -49,6 +49,7 @@ Document::Layer *Document::selection_layer() const
 
 void Document::renderToSinglePanel(Layer::Image *target_panel, QPoint const &target_offset, Layer::Image const *input_panel, QPoint const &input_offset, Layer const *mask_layer, QColor const &brush_color, int opacity, bool *abort)
 {
+#if 0
 	QPoint org = input_panel->offset() + input_offset - (target_panel->offset() + target_offset);
 
 	int dx0 = 0;
@@ -71,81 +72,107 @@ void Document::renderToSinglePanel(Layer::Image *target_panel, QPoint const &tar
 	int h = sy1 - sy0;
 
 	if (w < 1 || h < 1) return;
+#else
+	const QPoint dst_org = target_offset + target_panel->offset();
+	const QPoint src_org = input_offset + input_panel->offset();
+	int dx0 = dst_org.x();
+	int dy0 = dst_org.y();
+	int dx1 = dx0 + target_panel->width();
+	int dy1 = dy0 + target_panel->height();
+	int sx0 = src_org.x();
+	int sy0 = src_org.y();
+	int sx1 = sx0 + input_panel->width();
+	int sy1 = sy0 + input_panel->height();
+	if (sx1 <= dx0) return;
+	if (sy1 <= dy0) return;
+	if (dx1 <= sx0) return;
+	if (dy1 <= sy0) return;
+	const int x0 = std::max(dx0, sx0);
+	const int y0 = std::max(dy0, sy0);
+	const int x1 = std::min(dx1, sx1);
+	const int y1 = std::min(dy1, sy1);
+	const int w = x1 - x0;
+	const int h = y1 - y0;
+#endif
+
+	if (w < 1 || h < 1) return;
 
 	QImage input_image = input_panel->image_;
 
-	if (w > 0 && h > 0) {
-		uint8_t *tmpmask = nullptr;
-		QImage maskimg;
-		if (mask_layer && !mask_layer->panels.empty()) {
-			Layer::Image panel;
-			panel.offset_ = target_panel->offset() + QPoint(sx0, sy0);
-			panel.image_ = QImage(w, h, QImage::Format_Grayscale8);
-			panel.image_.fill(Qt::black);
-			renderToEachPanels_(&panel, target_offset, *mask_layer, nullptr, Qt::white, 255, abort);
-			maskimg = panel.image_;
-		} else {
-			tmpmask = (uint8_t *)alloca(w);
-			memset(tmpmask, 255, w);
+	const int dx = x0 - dst_org.x();
+	const int dy = y0 - dst_org.y();
+	const int sx = x0 - src_org.x();
+	const int sy = y0 - src_org.y();
+	uint8_t *tmpmask = nullptr;
+	QImage maskimg;
+	if (mask_layer && !mask_layer->panels.empty()) {
+		Layer::Image panel;
+		panel.offset_ = QPoint(x0, y0);
+		panel.image_ = QImage(w, h, QImage::Format_Grayscale8);
+		panel.image_.fill(Qt::black);
+		renderToEachPanels_(&panel, target_offset, *mask_layer, nullptr, Qt::white, 255, abort);
+		maskimg = panel.image_;
+	} else {
+		tmpmask = (uint8_t *)alloca(w);
+		memset(tmpmask, 255, w);
+	}
+
+	if (input_image.format() == QImage::Format_Grayscale8) {
+		QImage const &selection = input_image;
+
+		QColor c = brush_color.isValid() ? brush_color : Qt::white;
+
+		uint8_t invert = 0;
+		if (opacity < 0) {
+			opacity = -opacity;
+			invert = 255;
 		}
 
-		if (input_image.format() == QImage::Format_Grayscale8) {
-			QImage const &selection = input_image;
-
-			QColor c = brush_color.isValid() ? brush_color : Qt::white;
-
-			uint8_t invert = 0;
-			if (opacity < 0) {
-				opacity = -opacity;
-				invert = 255;
-			}
-
-			if (target_panel->isRGBA8888()) {
-				euclase::PixelRGBA color(c.red(), c.green(), c.blue());
-				for (int i = 0; i < h; i++) {
-					using Pixel = euclase::PixelRGBA;
-					uint8_t const *m = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
-					uint8_t const *s = selection.scanLine(y + i);
-					Pixel *d = reinterpret_cast<Pixel *>(target_panel->image_.scanLine(dy0 + i));
-					for (int j = 0; j < w; j++) {
-						color.a = opacity * (s[x + j] ^ invert) * m[j] / (255 * 255);
-						d[dx0 + j] = AlphaBlend::blend_with_gamma_collection(d[dx0 + j], color);
-					}
-				}
-			} else if (target_panel->isGrayscale8()) {
-				euclase::PixelGrayA color(euclase::gray(c.red(), c.green(), c.blue()));
-				uint8_t l = color.l;
-				for (int i = 0; i < h; i++) {
-					using Pixel = euclase::PixelGrayA;
-					uint8_t const *m = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
-					uint8_t const *s = reinterpret_cast<uint8_t const *>(selection.scanLine(y + i));
-					uint8_t *d = reinterpret_cast<uint8_t *>(target_panel->image_.scanLine(dy0 + i));
-					for (int j = 0; j < w; j++) {
-						uint8_t a = opacity * (s[x + j] ^ invert) * m[j] / (255 * 255);
-						d[dx0 + j] = AlphaBlend::blend(Pixel(d[dx0 + j]), Pixel(l, a)).l;
-					}
+		if (target_panel->isRGBA8888()) {
+			euclase::PixelRGBA color(c.red(), c.green(), c.blue());
+			for (int i = 0; i < h; i++) {
+				using Pixel = euclase::PixelRGBA;
+				uint8_t const *msk = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
+				uint8_t const *src = selection.scanLine(sy + i);
+				Pixel *dst = reinterpret_cast<Pixel *>(target_panel->image_.scanLine(dy + i));
+				for (int j = 0; j < w; j++) {
+					color.a = opacity * (src[sx + j] ^ invert) * msk[j] / (255 * 255);
+					dst[dx + j] = AlphaBlend::blend_with_gamma_collection(dst[dx + j], color);
 				}
 			}
-			return;
+		} else if (target_panel->isGrayscale8()) {
+			euclase::PixelGrayA color(euclase::gray(c.red(), c.green(), c.blue()));
+			uint8_t l = color.l;
+			for (int i = 0; i < h; i++) {
+				using Pixel = euclase::PixelGrayA;
+				uint8_t const *msk = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
+				uint8_t const *src = reinterpret_cast<uint8_t const *>(selection.scanLine(sy + i));
+				uint8_t *dst = reinterpret_cast<uint8_t *>(target_panel->image_.scanLine(dy + i));
+				for (int j = 0; j < w; j++) {
+					uint8_t a = opacity * (src[sx + j] ^ invert) * msk[j] / (255 * 255);
+					dst[dx + j] = AlphaBlend::blend(Pixel(dst[dx + j]), Pixel(l, a)).l;
+				}
+			}
 		}
-		if (input_image.format() == QImage::Format_RGB32) {
-			input_image = input_image.convertToFormat(QImage::Format_RGBA8888);
-		}
-		if (input_image.format() == QImage::Format_RGBA8888) {
-			if (target_panel->isRGBA8888()) {
-				for (int i = 0; i < h; i++) {
-					using Pixel = euclase::PixelRGBA;
-					uint8_t const *m = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
-					Pixel const *s = reinterpret_cast<Pixel const *>(input_image.scanLine(y + i));
-					Pixel *d = reinterpret_cast<Pixel *>(target_panel->image_.scanLine(dy0 + i));
-					for (int j = 0; j < w; j++) {
-						euclase::PixelRGBA color = s[x + j];
-						color.a = color.a * m[j] / 255;
-						d[dx0 + j] = AlphaBlend::blend_with_gamma_collection(d[dx0 + j], color);
-					}
+		return;
+	}
+	if (input_image.format() == QImage::Format_RGB32) {
+		input_image = input_image.convertToFormat(QImage::Format_RGBA8888);
+	}
+	if (input_image.format() == QImage::Format_RGBA8888) {
+		if (target_panel->isRGBA8888()) {
+			for (int i = 0; i < h; i++) {
+				using Pixel = euclase::PixelRGBA;
+				uint8_t const *msk = maskimg.isNull() ? tmpmask : maskimg.scanLine(i);
+				Pixel const *src = reinterpret_cast<Pixel const *>(input_image.scanLine(sy + i));
+				Pixel *dst = reinterpret_cast<Pixel *>(target_panel->image_.scanLine(dy + i));
+				for (int j = 0; j < w; j++) {
+					euclase::PixelRGBA color = src[sx + j];
+					color.a = color.a * msk[j] / 255;
+					dst[dx + j] = AlphaBlend::blend_with_gamma_collection(dst[dx + j], color);
 				}
-			} else if (target_panel->isGrayscale8()) {
 			}
+		} else if (target_panel->isGrayscale8()) {
 		}
 	}
 }
@@ -308,6 +335,12 @@ void Document::changeSelection(SelectionOperation op, const QRect &rect, QMutex 
 	panel->offset_ = rect.topLeft();
 	panel->image_ = QImage(rect.size(), QImage::Format_Grayscale8);
 	panel->image_.fill(Qt::white);
+	if (1) {
+		panel->image_.fill(Qt::black);
+		QPainter pr(&panel->image_);
+		pr.setBrush(Qt::white);
+		pr.drawEllipse(0, 0, rect.width() - 1, rect.height() - 1);
+	}
 
 	switch (op) {
 	case SelectionOperation::SetSelection:

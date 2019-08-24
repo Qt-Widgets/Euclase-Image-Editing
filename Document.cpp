@@ -93,7 +93,7 @@ void Document::renderToSinglePanel(Image *target_panel, QPoint const &target_off
 	QImage maskimg;
 	if (mask_layer && !mask_layer->panels_.empty()) {
 		Image panel;
-		panel.header_.offset_ = QPoint(x0, y0);
+		panel.setOffset(x0, y0);
 		panel.image_ = QImage(w, h, QImage::Format_Grayscale8);
 		panel.image_.fill(Qt::black);
 		renderToEachPanels_(&panel, target_offset, *mask_layer, nullptr, Qt::white, 255, abort);
@@ -247,7 +247,7 @@ void Document::renderToLayer(Layer *target_layer, Layer const &input_layer, Laye
 				if (count == 0) {
 					PanelPtr panel = PanelPtr::makeImage();
 					panel->image_ = input_panel->image_.copy();
-					panel->header_.offset_ = input_panel->offset();
+					panel->setOffset(input_panel->offset());
 					if (sync) sync->lock();
 					target_layer->panels_.push_back(panel);
 					if (sync) sync->unlock();
@@ -282,7 +282,7 @@ QImage Document::renderSelection(const QRect &r, QMutex *sync, bool *abort) cons
 	Image panel;
 	panel.image_ = QImage(r.width(), r.height(), QImage::Format_Grayscale8);
 	panel.image_.fill(Qt::black);
-	panel.header_.offset_ = r.topLeft();
+	panel.setOffset(r.topLeft());
 	renderToEachPanels(&panel, QPoint(), *selection_layer(), nullptr, QColor(), 255, sync, abort);
 	return panel.image_;
 }
@@ -291,7 +291,7 @@ QImage Document::renderToLayer(const QRect &r, bool quickmask, QMutex *sync, boo
 {
 	Image panel;
 	panel.image_ = QImage(r.width(), r.height(), QImage::Format_RGBA8888);
-	panel.header_.offset_ = r.topLeft();
+	panel.setOffset(r.topLeft());
 	renderToEachPanels(&panel, QPoint(), *current_layer(), nullptr, QColor(), 255, sync, abort);
 	if (quickmask) {
 		renderToEachPanels(&panel, QPoint(), *selection_layer(), nullptr, QColor(255, 0, 0), -128, sync, abort);
@@ -364,7 +364,7 @@ void Document::changeSelection(SelectionOperation op, const QRect &rect, QMutex 
 {
 	Document::Layer layer;
 	auto panel = layer.addImagePanel();
-	panel->header_.offset_ = rect.topLeft();
+	panel->setOffset(rect.topLeft());
 	panel->image_ = QImage(rect.size(), QImage::Format_Grayscale8);
 	panel->image_.fill(Qt::white);
 	if (1) {

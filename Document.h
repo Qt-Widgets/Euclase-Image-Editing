@@ -33,6 +33,16 @@ public:
 			return header_.offset();
 		}
 
+		void setOffset(QPoint const &pt)
+		{
+			header_.offset_ = pt;
+		}
+
+		void setOffset(int x, int y)
+		{
+			setOffset(QPoint(x, y));
+		}
+
 		int width() const
 		{
 			return image_.width();
@@ -215,7 +225,7 @@ public:
 		PanelPtr addImagePanel(int x = 0, int y = 0, int w = 64, int h = 64)
 		{
 			auto panel = PanelPtr::makeImage();
-			panel->header_.offset_ = QPoint(x, y);
+			panel->setOffset(x, y);
 			if (w > 0 && h > 0) {
 				panel->image_ = QImage(w, h, QImage::Format_RGBA8888);
 				panel->image_.fill(Qt::transparent);
@@ -235,16 +245,6 @@ public:
 		}
 
 		Layer() = default;
-
-		void create(int w, int h)
-		{
-			panels_.clear();
-			for (int y = 0; y < h; y += 64) {
-				for (int x = 0; x < w; x += 64) {
-					auto panel = addImagePanel(x, y, 64, 64);
-				}
-			}
-		}
 
 		QPoint const &offset() const
 		{

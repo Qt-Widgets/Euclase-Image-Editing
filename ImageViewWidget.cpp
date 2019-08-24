@@ -253,8 +253,7 @@ QBrush ImageViewWidget::getTransparentBackgroundBrush()
 
 QSize ImageViewWidget::imageSize() const
 {
-	auto layer = document()->current_layer();
-	return layer ? layer->size() : QSize();
+	return document()->size();
 }
 
 void ImageViewWidget::setSelectionOutline(const SelectionOutlineBitmap &data)

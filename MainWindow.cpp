@@ -180,27 +180,13 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 {
 	int w = image.width();
 	int h = image.height();
-//w = h = 64;
-	document()->current_layer()->create(w, h);
+	document()->setSize(QSize(w, h));
+	document()->current_layer()->tile_mode_ = true;
 
-	Document::Layer layer(w, h);
+	Document::Layer layer;
 	layer.setImage(QPoint(0, 0), image);
 	document()->renderToLayer(document()->current_layer(), layer, nullptr, QColor(), ui->widget_image_view->synchronizer(), nullptr);
 
-//	if (1) {
-//		int w = documentWidth();
-//		int h = documentHeight();
-//		QImage image(w, h, QImage::Format_Grayscale8);
-//		image.fill(Qt::black);
-//		{
-//			QPainter pr(&image);
-//			pr.setRenderHint(QPainter::Antialiasing);
-//			pr.setPen(Qt::NoPen);
-//			pr.setBrush(Qt::white);
-//			pr.drawEllipse(0, 0, w, h);
-//		}
-//		document()->selection_layer()->image() = image;
-//	}
 	ui->widget_image_view->update();
 
 	if (fitview) {
@@ -302,7 +288,7 @@ void MainWindow::on_action_file_save_as_triggered()
 {
 	QString path = QFileDialog::getSaveFileName(this);
 	if (!path.isEmpty()) {
-		QSize sz = document()->current_layer()->size();
+		QSize sz = document()->size();
 		QImage img = document()->renderToLayer(QRect(0, 0, sz.width(), sz.height()), false, synchronizer(), nullptr);
 		img.save(path);
 	}
@@ -310,7 +296,7 @@ void MainWindow::on_action_file_save_as_triggered()
 
 QImage MainWindow::renderFilterTargetImage()
 {
-	QSize sz = document()->current_layer()->size();
+	QSize sz = document()->size();
 	QImage image = renderImage(QRect(0, 0, sz.width(), sz.height()), false, nullptr);
 	return image;
 }
@@ -443,7 +429,7 @@ void MainWindow::drawBrush(bool one)
 				dst[j] = v;
 			}
 		}
-		Document::Layer layer(image.width(), image.height());
+		Document::Layer layer;
 		layer.setImage(QPoint(x0, y0), image);
 		paintLayer(Operation::PaintToCurrentLayer, layer);
 	};
@@ -764,9 +750,6 @@ SelectionOutlineBitmap MainWindow::renderSelectionOutlineBitmap(bool *abort)
 {
 	return ui->widget_image_view->renderSelectionOutlineBitmap(abort);
 }
-
-
-
 
 void MainWindow::test()
 {

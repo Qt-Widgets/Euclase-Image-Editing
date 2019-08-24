@@ -21,6 +21,7 @@ SOURCES += main.cpp\
     MyWidget.cpp \
     MyApplication.cpp \
     HueWidget.cpp \
+	RingSlider.cpp \
     SaturationBrightnessWidget.cpp \
 	SelectionOutlineRenderer.cpp \
 	antialias.cpp \
@@ -45,6 +46,7 @@ HEADERS  += MainWindow.h \
     ImageViewRenderer.h \
     MiraCL.h \
     MyWidget.h \
+    RingSlider.h \
     SelectionOutlineRenderer.h \
     antialias.h \
     euclase.h \

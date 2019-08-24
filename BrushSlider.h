@@ -1,9 +1,9 @@
 #ifndef BRUSHSLIDER_H
 #define BRUSHSLIDER_H
 
-#include <QSlider>
+#include "RingSlider.h"
 
-class BrushSlider : public QSlider {
+class BrushSlider : public RingSlider {
 	Q_OBJECT
 public:
 	enum VisualType {
@@ -11,31 +11,14 @@ public:
 		SOFTNESS,
 	};
 private:
-	QColor color_;
 	QImage image_;
 	VisualType visual_type_ = SIZE;
-	int handle_size_ = 16;
-	QRect slider_rect_;
-	QRect handle_rect_;
-	int mouse_press_value_;
-	QPoint mouse_press_pos_;
-	void updateGeometry();
-	void offset(int delta);
 protected:
-	void resizeEvent(QResizeEvent *e);
-	void paintEvent(QPaintEvent *);
-	void keyPressEvent(QKeyEvent *);
-	void mousePressEvent(QMouseEvent *e);
-	void mouseMoveEvent(QMouseEvent *e);
+	QImage generateSliderImage() override;
 public:
 	explicit BrushSlider(QWidget *parent = nullptr);
 	VisualType visualType() const;
-	void setVisualType(VisualType visualType);
-	void setColor(const QColor &color);
-
-	// QWidget interface
-protected:
-	void mouseDoubleClickEvent(QMouseEvent *);
+	void setVisualType(VisualType type);
 };
 
 #endif // BRUSHSLIDER_H

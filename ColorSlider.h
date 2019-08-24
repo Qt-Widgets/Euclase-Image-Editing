@@ -1,12 +1,12 @@
 #ifndef COLORSLIDER_H
 #define COLORSLIDER_H
 
-#include <QSlider>
+#include "RingSlider.h"
 
-class ColorSlider : public QSlider {
+class ColorSlider : public RingSlider {
 	Q_OBJECT
 public:
-	enum ColorType {
+	enum VisualType {
 		RGB_R,
 		RGB_G,
 		RGB_B,
@@ -16,29 +16,14 @@ public:
 	};
 private:
 	QColor color_;
-	ColorType color_type_ = HSV_H;
-	int handle_size_ = 16;
-	QRect slider_rect_;
-	QRect handle_rect_;
-	int mouse_press_value_;
-	QPoint mouse_press_pos_;
-	void updateGeometry();
-	void offset(int delta);
+	VisualType color_type_ = HSV_H;
 protected:
-	void resizeEvent(QResizeEvent *e);
-	void paintEvent(QPaintEvent *);
-	void keyPressEvent(QKeyEvent *);
-	void mousePressEvent(QMouseEvent *e);
-	void mouseMoveEvent(QMouseEvent *e);
+	QImage generateSliderImage() override;
 public:
 	explicit ColorSlider(QWidget *parent = nullptr);
-	ColorType colorType() const;
-	void setColorType(ColorType colorType);
+	VisualType visualType() const;
+	void setVisualType(VisualType type);
 	void setColor(const QColor &color);
-
-	// QWidget interface
-protected:
-	void mouseDoubleClickEvent(QMouseEvent *e);
 };
 
 #endif // COLORSLIDER_H

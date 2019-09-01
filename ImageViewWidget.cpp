@@ -46,7 +46,7 @@ struct ImageViewWidget::Private {
 	bool left_button = false;
 
 	ImageViewRenderer *renderer = nullptr;
-	QImage rendered_image;
+	RenderedImage rendered_image;
 	QRect destination_rect;
 
 	SelectionOutlineRenderer *outline_renderer = nullptr;
@@ -267,7 +267,7 @@ void ImageViewWidget::clearSelectionOutline()
 	setSelectionOutline(SelectionOutlineBitmap());
 }
 
-void ImageViewWidget::onRenderingCompleted(QImage const &image)
+void ImageViewWidget::onRenderingCompleted(RenderedImage const &image)
 {
 	m->rendered_image = image;
 	update();
@@ -296,7 +296,19 @@ void ImageViewWidget::paintViewLater(bool image, bool selection_outline)
 	QSize imagesize = imageSize();
 
 	if (image) {
-		m->renderer->request(mainwindow(), QRect(0, 0, imagesize.width(), imagesize.height()));
+		QPointF pt0 = mapFromViewportToDocument(QPointF(0, 0));
+		QPointF pt1 = mapFromViewportToDocument(QPointF(width(), height()));
+		int x0 = (int)floor(pt0.x());
+		int y0 = (int)floor(pt0.y());
+		int x1 = (int)ceil(pt1.x());
+		int y1 = (int)ceil(pt1.y());
+		x0 = std::max(x0, 0);
+		y0 = std::max(y0, 0);
+		x1 = std::min(x1, document()->width());
+		y1 = std::min(y1, document()->height());
+		QRect r(x0, y0, x1 - x0, y1 - y0);
+		qDebug() << r;
+		m->renderer->request(mainwindow(), r);
 	}
 
 	if (selection_outline) {
@@ -440,13 +452,21 @@ SelectionOutlineBitmap ImageViewWidget::renderSelectionOutlineBitmap(bool *abort
 void ImageViewWidget::paintEvent(QPaintEvent *)
 {
 	QPainter pr(this);
+	pr.fillRect(rect(), QColor(240, 240, 240));
 	int x = m->destination_rect.x();
 	int y = m->destination_rect.y();
 	int w = m->destination_rect.width();
 	int h = m->destination_rect.height();
 	if (w > 0 && h > 0) {
-		if (!m->rendered_image.isNull()) {
-			pr.drawImage(m->destination_rect, m->rendered_image, m->rendered_image.rect());
+		if (!m->rendered_image.image.isNull()) {
+			double x = m->rendered_image.rect.x();
+			double y = m->rendered_image.rect.y();
+			double w = m->rendered_image.rect.width();
+			double h = m->rendered_image.rect.height();
+			QPointF pt0 = mapFromDocumentToViewport(QPointF(x, y));
+			QPointF pt1 = mapFromDocumentToViewport(QPointF(x + w, y + h));
+			QRect r(int(pt0.x()), int(pt0.y()), int(pt1.x() - pt0.x()), int(pt1.y() - pt0.y()));
+			pr.drawImage(r, m->rendered_image.image, m->rendered_image.image.rect());
 		}
 		misc::drawFrame(&pr, (int)x - 1, (int)y - 1, (int)w + 2, (int)h + 2, Qt::black, Qt::black);
 	}

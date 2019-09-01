@@ -7,6 +7,7 @@
 #include "SelectionOutlineRenderer.h"
 
 class Document;
+class RenderedImage;
 
 class ImageViewWidget : public QWidget {
 	Q_OBJECT
@@ -72,7 +73,7 @@ public:
 	QBitmap updateSelection_();
 	SelectionOutlineBitmap renderSelectionOutlineBitmap(bool *abort);
 private slots:
-	void onRenderingCompleted(const QImage &image);
+	void onRenderingCompleted(const RenderedImage &image);
 	void onSelectionOutlineRenderingCompleted(const SelectionOutlineBitmap &data);
 signals:
 	void scaleChanged(double scale);

@@ -1,11 +1,20 @@
 #ifndef IMAGEVIEWRENDERER_H
 #define IMAGEVIEWRENDERER_H
 
+#include <QImage>
 #include <QObject>
 #include <QRect>
 #include <QThread>
+#include <deque>
 
 class MainWindow;
+
+class RenderedImage {
+public:
+	QRect rect;
+	QImage image;
+};
+Q_DECLARE_METATYPE(RenderedImage)
 
 class ImageViewRenderer : public QThread {
 	Q_OBJECT
@@ -22,7 +31,7 @@ public:
 	void request(MainWindow *mw, QRect const &rect);
 	void abort();
 signals:
-	void done(QImage const &image);
+	void done(RenderedImage const &image);
 };
 
 #endif // IMAGEVIEWRENDERER_H

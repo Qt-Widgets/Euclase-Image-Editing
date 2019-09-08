@@ -24,6 +24,7 @@ SOURCES += main.cpp\
 	RingSlider.cpp \
     SaturationBrightnessWidget.cpp \
 	SelectionOutlineRenderer.cpp \
+	TransparentCheckerBrush.cpp \
 	antialias.cpp \
 	euclase.cpp \
 	median.cpp \
@@ -48,6 +49,7 @@ HEADERS  += MainWindow.h \
     MyWidget.h \
     RingSlider.h \
     SelectionOutlineRenderer.h \
+    TransparentCheckerBrush.h \
     antialias.h \
     euclase.h \
     main.h \

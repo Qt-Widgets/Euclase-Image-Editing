@@ -303,6 +303,7 @@ public:
 	void subSelection(const Layer &source, QMutex *sync, bool *abort);
 	QImage renderSelection(const QRect &r, QMutex *sync, bool *abort) const;
 	void changeSelection(SelectionOperation op, QRect const &rect, QMutex *sync);
+	QImage crop(const QRect &r, QMutex *sync, bool *abort) const;
 };
 
 #endif // DOCUMENT_H

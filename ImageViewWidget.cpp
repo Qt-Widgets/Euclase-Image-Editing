@@ -21,6 +21,7 @@
 #include <cmath>
 #include <functional>
 #include <memory>
+#include "TransparentCheckerBrush.h"
 
 using SvgRendererPtr = std::shared_ptr<QSvgRenderer>;
 
@@ -307,7 +308,6 @@ void ImageViewWidget::paintViewLater(bool image, bool selection_outline)
 		x1 = std::min(x1, document()->width());
 		y1 = std::min(y1, document()->height());
 		QRect r(x0, y0, x1 - x0, y1 - y0);
-		qDebug() << r;
 		m->renderer->request(mainwindow(), r);
 	}
 
@@ -459,6 +459,9 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 	int h = m->destination_rect.height();
 	if (w > 0 && h > 0) {
 		if (!m->rendered_image.image.isNull()) {
+			qDebug() << m->rendered_image.rect;
+			QImage image = m->rendered_image.image;
+#if 0
 			double x = m->rendered_image.rect.x();
 			double y = m->rendered_image.rect.y();
 			double w = m->rendered_image.rect.width();
@@ -466,7 +469,40 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 			QPointF pt0 = mapFromDocumentToViewport(QPointF(x, y));
 			QPointF pt1 = mapFromDocumentToViewport(QPointF(x + w, y + h));
 			QRect r(int(pt0.x()), int(pt0.y()), int(pt1.x() - pt0.x()), int(pt1.y() - pt0.y()));
-			pr.drawImage(r, m->rendered_image.image, m->rendered_image.image.rect());
+//			{
+//				image = QImage(image.width(), image.height(), QImage::Format_RGBA8888);
+//				{
+//					QPainter pr(&image);
+//					pr.fillRect(image.rect(), TransparentCheckerBrush::brush());
+//					pr.drawImage(0, 0, m->rendered_image.image);
+//				}
+//			}
+			pr.drawImage(r, image, image.rect());
+#else
+			for (int y = 0; y < image.height(); y += 64) {
+				for (int x = 0; x < image.width(); x += 64) {
+					int src_x0 = m->rendered_image.rect.x() + x;
+					int src_y0 = m->rendered_image.rect.y() + y;
+					int src_x1 = m->rendered_image.rect.x() + std::min(x + 65, image.width());
+					int src_y1 = m->rendered_image.rect.y() + std::min(y + 65, image.height());
+					QPointF pt0(src_x0, src_y0);
+					QPointF pt1(src_x1, src_y1);
+					pt0 = mapFromDocumentToViewport(pt0);
+					pt1 = mapFromDocumentToViewport(pt1);
+					int dst_x0 = (int)floor(pt0.x() + 0.5);
+					int dst_y0 = (int)floor(pt0.y() + 0.5);
+					int dst_x1 = (int)floor(pt1.x() + 0.5);
+					int dst_y1 = (int)floor(pt1.y() + 0.5);
+					if (dst_x0 >= width()) continue;
+					if (dst_y0 >= height()) continue;
+					if (dst_x1 <= 0) continue;
+					if (dst_y1 <= 0) continue;
+					QRect sr(x, y, src_x1 - src_x0, src_y1 - src_y0);
+					QRect dr(dst_x0, dst_y0, dst_x1 - dst_x0, dst_y1 - dst_y0);
+					pr.drawImage(dr, image, sr);
+				}
+			}
+#endif
 		}
 		misc::drawFrame(&pr, (int)x - 1, (int)y - 1, (int)w + 2, (int)h + 2, Qt::black, Qt::black);
 	}

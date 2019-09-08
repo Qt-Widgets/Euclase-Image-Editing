@@ -1,6 +1,7 @@
 #ifndef IMAGEVIEWRENDERER_H
 #define IMAGEVIEWRENDERER_H
 
+#include <QBrush>
 #include <QImage>
 #include <QObject>
 #include <QRect>

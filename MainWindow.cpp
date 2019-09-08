@@ -181,6 +181,7 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 	int w = image.width();
 	int h = image.height();
 	document()->setSize(QSize(w, h));
+	document()->current_layer()->clear(nullptr);
 	document()->current_layer()->tile_mode_ = true;
 
 	Document::Layer layer;
@@ -358,7 +359,18 @@ void MainWindow::on_verticalScrollBar_valueChanged(int value)
 void MainWindow::on_action_trim_triggered()
 {
 	QRect r = selectionRect();
-	QImage image = document()->renderToLayer(r, false, synchronizer(), nullptr);
+//	QImage image = document()->renderToLayer(r, false, synchronizer(), nullptr);
+	QImage image = document()->crop(r, synchronizer(), nullptr);
+//	{
+//		QImage img(image.width(), image.height(), QImage::Format_RGBA8888);
+//		img.fill(Qt::red);
+//		{
+//			QPainter pr(&img);
+//			pr.drawImage(0, 0, image);
+
+//		}
+//		image = img;
+//	}
 	clearSelection();
 	setImage(image, true);
 }

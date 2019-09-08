@@ -291,11 +291,22 @@ QImage Document::renderToLayer(const QRect &r, bool quickmask, QMutex *sync, boo
 {
 	Image panel;
 	panel.image_ = QImage(r.width(), r.height(), QImage::Format_RGBA8888);
+	panel.image_.fill(Qt::transparent);
 	panel.setOffset(r.topLeft());
 	renderToEachPanels(&panel, QPoint(), *current_layer(), nullptr, QColor(), 255, sync, abort);
 	if (quickmask) {
 		renderToEachPanels(&panel, QPoint(), *selection_layer(), nullptr, QColor(255, 0, 0), -128, sync, abort);
 	}
+	return panel.image_;
+}
+
+QImage Document::crop(const QRect &r, QMutex *sync, bool *abort) const
+{
+	Image panel;
+	panel.image_ = QImage(r.width(), r.height(), QImage::Format_RGBA8888);
+	panel.image_.fill(Qt::transparent);
+	panel.setOffset(r.topLeft());
+	renderToEachPanels(&panel, QPoint(), *current_layer(), selection_layer(), QColor(), 255, sync, abort);
 	return panel.image_;
 }
 
@@ -322,7 +333,7 @@ QRect Document::Layer::rect() const
 				}
 			}
 			if (x0 < x1 && y0 < y1) {
-				QRect r = QRect(x0, y0, x1 - x0, y1 - y0).translated(offset() + p->offset());
+				QRect r = QRect(x0, y0, x1 - x0 + 1, y1 - y0 + 1).translated(offset() + p->offset());
 				if (rect.isNull()) {
 					rect = r;
 				} else {
@@ -348,7 +359,7 @@ QRect Document::Layer::rect() const
 				}
 			}
 			if (x0 < x1 && y0 < y1) {
-				QRect r = QRect(x0, y0, x1 - x0, y1 - y0).translated(offset() + p->offset());
+				QRect r = QRect(x0, y0, x1 - x0 + 1, y1 - y0 + 1).translated(offset() + p->offset());
 				if (rect.isNull()) {
 					rect = r;
 				} else {
@@ -370,6 +381,7 @@ void Document::changeSelection(SelectionOperation op, const QRect &rect, QMutex 
 	if (1) {
 		panel->image_.fill(Qt::black);
 		QPainter pr(&panel->image_);
+		pr.setRenderHint(QPainter::Antialiasing);
 		pr.setBrush(Qt::white);
 		pr.drawEllipse(0, 0, rect.width() - 1, rect.height() - 1);
 	}

@@ -1,5 +1,8 @@
 #include "ImageViewRenderer.h"
 #include "MainWindow.h"
+#include "TransparentCheckerBrush.h"
+#include <QPainter>
+
 
 ImageViewRenderer::ImageViewRenderer(QObject *parent)
 	: QThread(parent)

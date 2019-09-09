@@ -290,13 +290,13 @@ public:
 private:
 	static void renderToEachPanels_(Image *target_panel, const QPoint &target_offset, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, bool *abort);
 	static void renderToEachPanels(Image *target_panel, const QPoint &target_offset, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, int opacity, QMutex *sync, bool *abort);
-	static void renderToSinglePanel(Image *target_panel, const QPoint &target_offset, const Image *input_panel, const QPoint &input_offset, const Layer *mask_layer, const QColor &brush_color, int opacity = 255, bool *abort = nullptr);
 public:
 	enum class SelectionOperation {
 		SetSelection,
 		AddSelection,
 		SubSelection,
 	};
+	static void renderToSinglePanel(Image *target_panel, const QPoint &target_offset, const Image *input_panel, const QPoint &input_offset, const Layer *mask_layer, const QColor &brush_color, int opacity = 255, bool *abort = nullptr);
 	static void renderToLayer(Layer *target_layer, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, QMutex *sync, bool *abort);
 	void clearSelection(QMutex *sync);
 	void addSelection(const Layer &source, QMutex *sync, bool *abort);

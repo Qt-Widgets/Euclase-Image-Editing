@@ -478,7 +478,10 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 //				}
 //			}
 			pr.drawImage(r, image, image.rect());
-#else
+#elif 1
+			QPointF org = mapFromDocumentToViewport(QPointF(0, 0));
+			int ox = (int)floor(org.x() + 0.5);
+			int oy = (int)floor(org.y() + 0.5);
 			for (int y = 0; y < image.height(); y += 64) {
 				for (int x = 0; x < image.width(); x += 64) {
 					int src_x0 = m->rendered_image.rect.x() + x;
@@ -499,7 +502,14 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 					if (dst_y1 <= 0) continue;
 					QRect sr(x, y, src_x1 - src_x0, src_y1 - src_y0);
 					QRect dr(dst_x0, dst_y0, dst_x1 - dst_x0, dst_y1 - dst_y0);
-					pr.drawImage(dr, image, sr);
+					QImage tmpimg(dr.width(), dr.height(), QImage::Format_RGBA8888);
+					{
+						QPainter pr2(&tmpimg);
+						pr2.setBrushOrigin(ox - dr.x(), oy - dr.y());
+						pr2.fillRect(tmpimg.rect(), TransparentCheckerBrush::brush());
+						pr2.drawImage(QRect(0, 0, dr.width(), dr.height()), image, sr);
+					}
+					pr.drawImage(dr.x(), dr.y(), tmpimg);
 				}
 			}
 #endif

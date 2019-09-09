@@ -406,28 +406,34 @@ SelectionOutlineBitmap ImageViewWidget::renderSelectionOutlineBitmap(bool *abort
 	int dw = document()->width();
 	int dh = document()->height();
 	if (dw > 0 && dh > 0) {
-		QPointF vp0(0, 0);
-		QPointF vp1(dw, dh);
-		vp0 = mapFromDocumentToViewport(vp0);
-		vp1 = mapFromDocumentToViewport(vp1);
-		vp0.rx() = std::max(vp0.rx(), (double)0);
-		vp0.ry() = std::max(vp0.ry(), (double)0);
-		vp1.rx() = std::min(vp1.rx(), (double)width());
-		vp1.ry() = std::min(vp1.ry(), (double)height());
-		int vw = vp1.x() - vp0.x();
-		int vh = vp1.y() - vp0.y();
-		QPointF dp0 = mapFromViewportToDocument(vp0);
-		QPointF dp1 = mapFromViewportToDocument(vp1);
+		QPointF dp0(0, 0);
+		QPointF dp1(width(), height());
+		dp0 = mapFromViewportToDocument(dp0);
+		dp1 = mapFromViewportToDocument(dp1);
+		dp0.rx() = floor(std::max(dp0.rx(), (double)0));
+		dp0.ry() = floor(std::max(dp0.ry(), (double)0));
+		dp1.rx() = ceil(std::min(dp1.rx(), (double)dw));
+		dp1.ry() = ceil(std::min(dp1.ry(), (double)dh));
+		QPointF vp0 = mapFromDocumentToViewport(dp0);
+		QPointF vp1 = mapFromDocumentToViewport(dp1);
+		vp0.rx() = floor(vp0.rx());
+		vp0.ry() = floor(vp0.ry());
+		vp1.rx() = ceil(vp1.rx());
+		vp1.ry() = ceil(vp1.ry());
+		int vx = (int)vp0.x();
+		int vy = (int)vp0.y();
+		int vw = (int)vp1.x() - vx;
+		int vh = (int)vp1.y() - vy;
 		QImage selection;
 		{
-			int x = floor(dp0.x());
-			int y = floor(dp0.y());
-			int w = floor(dp1.x()) - x;
-			int h = floor(dp1.y()) - y;
-			selection = document()->renderSelection(QRect(x, y, w, h), &m->sync, abort);
+			int dx = int(dp0.x());
+			int dy = int(dp0.y());
+			int dw = int(dp1.x()) - dx;
+			int dh = int(dp1.y()) - dy;
+			selection = document()->renderSelection(QRect(dx, dy, dw, dh), &m->sync, abort);
 			if (abort && *abort) return SelectionOutlineBitmap();
 			selection = selection.scaled(vw, vh);
-			data.point = mapFromDocumentToViewport(QPointF(x, y)).toPoint();
+			data.point = QPoint(vx, vy);
 		}
 		if (selection.width() > 0 && selection.height() > 0) {
 			QImage image(vw, vh, QImage::Format_Grayscale8);
@@ -459,7 +465,7 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 	int h = m->destination_rect.height();
 	if (w > 0 && h > 0) {
 		if (!m->rendered_image.image.isNull()) {
-			qDebug() << m->rendered_image.rect;
+//			qDebug() << m->rendered_image.rect;
 			QImage image = m->rendered_image.image;
 #if 0
 			double x = m->rendered_image.rect.x();
@@ -520,6 +526,7 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 	if (!m->selection_outline.bitmap.isNull()) {
 		QBrush brush = stripeBrush(false);
 		pr.save();
+		qDebug() << m->selection_outline.point;
 		pr.setClipRegion(QRegion(m->selection_outline.bitmap).translated(m->selection_outline.point));
 		pr.setOpacity(0.5);
 		pr.fillRect(0, 0, width(), height(), brush);

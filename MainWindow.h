@@ -113,6 +113,7 @@ private slots:
 	void on_toolButton_scroll_clicked();
 	void on_toolButton_brush_clicked();
 	void on_toolButton_rect_clicked();
+	void on_action_edit_copy_triggered();
 };
 
 #endif // MAINWINDOW_H

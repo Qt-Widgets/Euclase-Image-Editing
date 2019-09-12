@@ -14,6 +14,7 @@
 #include <QDebug>
 #include <QBitmap>
 #include <QScreen>
+#include <QClipboard>
 
 struct MainWindow::Private {
 	Document doc;
@@ -763,7 +764,15 @@ SelectionOutlineBitmap MainWindow::renderSelectionOutlineBitmap(bool *abort)
 	return ui->widget_image_view->renderSelectionOutlineBitmap(abort);
 }
 
+void MainWindow::on_action_edit_copy_triggered()
+{
+	QRect r = selectionRect();
+	QImage image = document()->crop(r, synchronizer(), nullptr);
+	QApplication::clipboard()->setImage(image);
+}
+
 void MainWindow::test()
 {
 }
+
 

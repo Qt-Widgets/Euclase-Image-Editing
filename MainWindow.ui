@@ -917,7 +917,7 @@
      <x>0</x>
      <y>0</y>
      <width>824</width>
-     <height>24</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Edit">
@@ -926,6 +926,7 @@
     </property>
     <addaction name="action_resize"/>
     <addaction name="action_trim"/>
+    <addaction name="action_edit_copy"/>
    </widget>
    <widget class="QMenu" name="menu_File">
     <property name="title">
@@ -1003,6 +1004,14 @@
   <action name="action_trim">
    <property name="text">
     <string>Trim</string>
+   </property>
+  </action>
+  <action name="action_edit_copy">
+   <property name="text">
+    <string>&amp;Copy</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+C</string>
    </property>
   </action>
  </widget>

@@ -526,7 +526,7 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 	if (!m->selection_outline.bitmap.isNull()) {
 		QBrush brush = stripeBrush(false);
 		pr.save();
-		qDebug() << m->selection_outline.point;
+//		qDebug() << m->selection_outline.point;
 		pr.setClipRegion(QRegion(m->selection_outline.bitmap).translated(m->selection_outline.point));
 		pr.setOpacity(0.5);
 		pr.fillRect(0, 0, width(), height(), brush);

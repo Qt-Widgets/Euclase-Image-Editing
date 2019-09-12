@@ -378,7 +378,7 @@ void Document::changeSelection(SelectionOperation op, const QRect &rect, QMutex 
 	panel->setOffset(rect.topLeft());
 	panel->image_ = QImage(rect.size(), QImage::Format_Grayscale8);
 	panel->image_.fill(Qt::white);
-	if (1) {
+	if (0) {
 		panel->image_.fill(Qt::black);
 		QPainter pr(&panel->image_);
 		pr.setRenderHint(QPainter::Antialiasing);

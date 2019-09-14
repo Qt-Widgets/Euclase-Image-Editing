@@ -68,14 +68,6 @@ ImageViewWidget::ImageViewWidget(QWidget *parent)
 	: QWidget(parent)
 	, m(new Private)
 {
-#if defined(Q_OS_WIN32)
-	setFont(QFont("MS Gothic"));
-#elif defined(Q_OS_LINUX)
-	setFont(QFont("Monospace"));
-#elif defined(Q_OS_MAC)
-	setFont(QFont("Menlo"));
-#endif
-
 	setContextMenuPolicy(Qt::DefaultContextMenu);
 
 	m->renderer = new ImageViewRenderer(this);
@@ -457,34 +449,19 @@ SelectionOutlineBitmap ImageViewWidget::renderSelectionOutlineBitmap(bool *abort
 
 void ImageViewWidget::paintEvent(QPaintEvent *)
 {
+	int doc_w = document()->width();
+	int doc_h = document()->height();
 	QPainter pr(this);
 	pr.fillRect(rect(), QColor(240, 240, 240));
 	int x = m->destination_rect.x();
 	int y = m->destination_rect.y();
 	int w = m->destination_rect.width();
 	int h = m->destination_rect.height();
+
+	// 画像
 	if (w > 0 && h > 0) {
 		if (!m->rendered_image.image.isNull()) {
-//			qDebug() << m->rendered_image.rect;
 			QImage image = m->rendered_image.image;
-#if 0
-			double x = m->rendered_image.rect.x();
-			double y = m->rendered_image.rect.y();
-			double w = m->rendered_image.rect.width();
-			double h = m->rendered_image.rect.height();
-			QPointF pt0 = mapFromDocumentToViewport(QPointF(x, y));
-			QPointF pt1 = mapFromDocumentToViewport(QPointF(x + w, y + h));
-			QRect r(int(pt0.x()), int(pt0.y()), int(pt1.x() - pt0.x()), int(pt1.y() - pt0.y()));
-//			{
-//				image = QImage(image.width(), image.height(), QImage::Format_RGBA8888);
-//				{
-//					QPainter pr(&image);
-//					pr.fillRect(image.rect(), TransparentCheckerBrush::brush());
-//					pr.drawImage(0, 0, m->rendered_image.image);
-//				}
-//			}
-			pr.drawImage(r, image, image.rect());
-#elif 1
 			QPointF org = mapFromDocumentToViewport(QPointF(0, 0));
 			int ox = (int)floor(org.x() + 0.5);
 			int oy = (int)floor(org.y() + 0.5);
@@ -518,21 +495,20 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 					pr.drawImage(dr.x(), dr.y(), tmpimg);
 				}
 			}
-#endif
 		}
-		misc::drawFrame(&pr, (int)x - 1, (int)y - 1, (int)w + 2, (int)h + 2, Qt::black, Qt::black);
 	}
 
+	// 選択領域点線
 	if (!m->selection_outline.bitmap.isNull()) {
 		QBrush brush = stripeBrush(false);
 		pr.save();
-//		qDebug() << m->selection_outline.point;
 		pr.setClipRegion(QRegion(m->selection_outline.bitmap).translated(m->selection_outline.point));
 		pr.setOpacity(0.5);
 		pr.fillRect(0, 0, width(), height(), brush);
 		pr.restore();
 	}
 
+	// 範囲指定矩形点滅
 	if (m->rect_visible) {
 		pr.setOpacity(0.5);
 		QBrush brush = stripeBrush(true);
@@ -550,6 +526,21 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 		x1 = floor(pt.x());
 		y1 = floor(pt.y());
 		misc::drawFrame(&pr, x0, y0, x1 - x0, y1 - y0, brush, brush);
+	}
+
+	// 外周
+	pr.setRenderHint(QPainter::Antialiasing);
+	if (doc_w > 0 && doc_h > 0) {
+		QPointF pt0(0, 0);
+		QPointF pt1(doc_w, doc_h);
+		pt0 = mapFromDocumentToViewport(pt0);
+		pt1 = mapFromDocumentToViewport(pt1);
+		int x = (int)floor(pt0.x() + 0.5);
+		int y = (int)floor(pt0.y() + 0.5);
+		int w = (int)floor(pt1.x() + 0.5) - x;
+		int h = (int)floor(pt1.y() + 0.5) - y;
+		QPen pen(Qt::black, 1);
+		pr.drawRect(x, y, w, h);
 	}
 }
 

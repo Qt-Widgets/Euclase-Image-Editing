@@ -378,12 +378,12 @@ void Document::changeSelection(SelectionOperation op, const QRect &rect, QMutex 
 	panel->setOffset(rect.topLeft());
 	panel->image_ = QImage(rect.size(), QImage::Format_Grayscale8);
 	panel->image_.fill(Qt::white);
-	if (0) {
+	if (1) {
 		panel->image_.fill(Qt::black);
 		QPainter pr(&panel->image_);
 		pr.setRenderHint(QPainter::Antialiasing);
 		pr.setBrush(Qt::white);
-		pr.drawEllipse(0, 0, rect.width() - 1, rect.height() - 1);
+		pr.drawEllipse(0, 0, rect.width(), rect.height());
 	}
 
 	switch (op) {

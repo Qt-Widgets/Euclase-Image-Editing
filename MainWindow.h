@@ -49,6 +49,7 @@ private:
 	QImage renderFilterTargetImage();
 	void onSelectionChanged();
 	void clearSelection();
+	QImage selectedImage() const;
 protected:
 	void keyPressEvent(QKeyEvent *event);
 public:
@@ -58,7 +59,7 @@ public:
 	Document *document();
 	Document const *document() const;
 
-	QMutex *synchronizer();
+	QMutex *synchronizer() const;
 
 	void fitView();
 	QImage renderImage(const QRect &r, bool quickmask, bool *abort) const;
@@ -114,6 +115,7 @@ private slots:
 	void on_toolButton_brush_clicked();
 	void on_toolButton_rect_clicked();
 	void on_action_edit_copy_triggered();
+	void on_action_new_triggered();
 };
 
 #endif // MAINWINDOW_H

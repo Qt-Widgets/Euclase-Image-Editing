@@ -21,6 +21,7 @@ SOURCES += main.cpp\
     MyWidget.cpp \
     MyApplication.cpp \
     HueWidget.cpp \
+	NewDialog.cpp \
 	RingSlider.cpp \
     SaturationBrightnessWidget.cpp \
 	SelectionOutlineRenderer.cpp \
@@ -47,6 +48,7 @@ HEADERS  += MainWindow.h \
     ImageViewRenderer.h \
     MiraCL.h \
     MyWidget.h \
+    NewDialog.h \
     RingSlider.h \
     SelectionOutlineRenderer.h \
     TransparentCheckerBrush.h \
@@ -69,6 +71,7 @@ HEADERS  += MainWindow.h \
     ColorSlider.h
 
 FORMS    += MainWindow.ui \
+    NewDialog.ui \
     ResizeDialog.ui
 
 RESOURCES += \

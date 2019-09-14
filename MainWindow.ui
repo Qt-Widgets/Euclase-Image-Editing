@@ -932,6 +932,7 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <addaction name="action_new"/>
     <addaction name="action_file_open"/>
     <addaction name="action_file_save_as"/>
    </widget>
@@ -1012,6 +1013,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+C</string>
+   </property>
+  </action>
+  <action name="action_new">
+   <property name="text">
+    <string>New...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
    </property>
   </action>
  </widget>

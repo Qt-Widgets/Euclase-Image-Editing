@@ -1,6 +1,7 @@
 #include "AlphaBlend.h"
 #include "Document.h"
 #include "MainWindow.h"
+#include "NewDialog.h"
 #include "ResizeDialog.h"
 #include "RoundBrushGenerator.h"
 #include "antialias.h"
@@ -95,7 +96,7 @@ Document const *MainWindow::document() const
 	return &m->doc;
 }
 
-QMutex *MainWindow::synchronizer()
+QMutex *MainWindow::synchronizer() const
 {
 	return ui->widget_image_view->synchronizer();
 }
@@ -179,6 +180,7 @@ Brush const &MainWindow::currentBrush() const
 
 void MainWindow::setImage(const QImage &image, bool fitview)
 {
+	clearSelection();
 	int w = image.width();
 	int h = image.height();
 	document()->setSize(QSize(w, h));
@@ -357,22 +359,15 @@ void MainWindow::on_verticalScrollBar_valueChanged(int value)
 	ui->widget_image_view->refrectScrollBar();
 }
 
-void MainWindow::on_action_trim_triggered()
+QImage MainWindow::selectedImage() const
 {
 	QRect r = selectionRect();
-//	QImage image = document()->renderToLayer(r, false, synchronizer(), nullptr);
-	QImage image = document()->crop(r, synchronizer(), nullptr);
-//	{
-//		QImage img(image.width(), image.height(), QImage::Format_RGBA8888);
-//		img.fill(Qt::red);
-//		{
-//			QPainter pr(&img);
-//			pr.drawImage(0, 0, image);
+	return document()->crop(r, synchronizer(), nullptr);
+}
 
-//		}
-//		image = img;
-//	}
-	clearSelection();
+void MainWindow::on_action_trim_triggered()
+{
+	QImage image = selectedImage();
 	setImage(image, true);
 }
 
@@ -766,8 +761,7 @@ SelectionOutlineBitmap MainWindow::renderSelectionOutlineBitmap(bool *abort)
 
 void MainWindow::on_action_edit_copy_triggered()
 {
-	QRect r = selectionRect();
-	QImage image = document()->crop(r, synchronizer(), nullptr);
+	QImage image = selectedImage();
 	QApplication::clipboard()->setImage(image);
 }
 
@@ -776,3 +770,21 @@ void MainWindow::test()
 }
 
 
+
+void MainWindow::on_action_new_triggered()
+{
+	NewDialog dlg(this);
+	if (dlg.exec() == QDialog::Accepted) {
+		QSize sz = dlg.imageSize();
+		if (dlg.from() == NewDialog::From::New) {
+			QImage image(sz.width(), sz.height(), QImage::Format_RGBA8888);
+			setImage(image, true);
+			return;
+		}
+		if (dlg.from() == NewDialog::From::Clipboard) {
+			QImage image = selectedImage();
+			setImage(image, true);
+			return;
+		}
+	}
+}

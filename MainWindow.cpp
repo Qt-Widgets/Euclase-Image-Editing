@@ -701,7 +701,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 			if (!list.empty()) {
 				QScreen *s = list.front();
 				if (s) {
-					QPixmap pm = s->grabWindow(winId());
+					QPixmap pm = s->grabWindow(0);
 					QImage im = pm.toImage().convertToFormat(QImage::Format_RGBA8888);
 					setImage(im, true);
 				}

@@ -6,6 +6,7 @@
 #include <memory>
 #include <functional>
 #include <QMutex>
+#include <QColor>
 
 class Document {
 public:
@@ -269,6 +270,15 @@ public:
 		QRect rect() const;
 	};
 
+	struct RenderOption {
+		enum Mode {
+			Default,
+			DirectCopy,
+		};
+		Mode mode = Default;
+		QColor brush_color;
+	};
+
 	struct Private;
 	Private *m;
 
@@ -284,7 +294,7 @@ public:
 	Layer *current_layer() const;
 	Layer *selection_layer() const;
 
-	void paintToCurrentLayer(const Layer &source, const QColor &brush_color, QMutex *sync, bool *abort);
+	void paintToCurrentLayer(const Layer &source, const RenderOption &opt, QMutex *sync, bool *abort);
 
 	QImage renderToLayer(QRect const &r, bool quickmask, QMutex *sync, bool *abort) const;
 private:
@@ -296,11 +306,11 @@ public:
 		AddSelection,
 		SubSelection,
 	};
-	static void renderToSinglePanel(Image *target_panel, const QPoint &target_offset, const Image *input_panel, const QPoint &input_offset, const Layer *mask_layer, const QColor &brush_color, int opacity = 255, bool *abort = nullptr);
-	static void renderToLayer(Layer *target_layer, const Layer &input_layer, Layer *mask_layer, const QColor &brush_color, QMutex *sync, bool *abort);
+	static void renderToSinglePanel(Image *target_panel, const QPoint &target_offset, const Image *input_panel, const QPoint &input_offset, const Layer *mask_layer, RenderOption const &opt, const QColor &brush_color, int opacity = 255, bool *abort = nullptr);
+	static void renderToLayer(Layer *target_layer, const Layer &input_layer, Layer *mask_layer, const RenderOption &opt, QMutex *sync, bool *abort);
 	void clearSelection(QMutex *sync);
-	void addSelection(const Layer &source, QMutex *sync, bool *abort);
-	void subSelection(const Layer &source, QMutex *sync, bool *abort);
+	void addSelection(const Layer &source, const RenderOption &opt, QMutex *sync, bool *abort);
+	void subSelection(const Layer &source, const RenderOption &opt, QMutex *sync, bool *abort);
 	QImage renderSelection(const QRect &r, QMutex *sync, bool *abort) const;
 	void changeSelection(SelectionOperation op, QRect const &rect, QMutex *sync);
 	QImage crop(const QRect &r, QMutex *sync, bool *abort) const;

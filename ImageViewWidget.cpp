@@ -25,6 +25,9 @@
 
 using SvgRendererPtr = std::shared_ptr<QSvgRenderer>;
 
+const int MAX_SCALE = 32;
+const int MIN_SCALE = 8;
+
 struct ImageViewWidget::Private {
 	MainWindow *mainwindow = nullptr;
 	QScrollBar *v_scroll_bar = nullptr;
@@ -321,8 +324,8 @@ void ImageViewWidget::updateCenterAnchorPos()
 
 void ImageViewWidget::setImageScale(double scale, bool updateview)
 {
-	if (scale < 1 / 32.0) scale = 1 / 32.0;
-	if (scale > 32) scale = 32;
+	if (scale < 1.0 / MIN_SCALE) scale = 1.0 / MIN_SCALE;
+	if (scale > MAX_SCALE) scale = MAX_SCALE;
 	m->image_scale = scale;
 
 	emit scaleChanged(m->image_scale);

@@ -16,6 +16,7 @@
 #include <QBitmap>
 #include <QScreen>
 #include <QClipboard>
+#include <QElapsedTimer>
 
 struct MainWindow::Private {
 	Document doc;
@@ -189,7 +190,9 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 
 	Document::Layer layer;
 	layer.setImage(QPoint(0, 0), image);
-	document()->renderToLayer(document()->current_layer(), layer, nullptr, QColor(), ui->widget_image_view->synchronizer(), nullptr);
+	Document::RenderOption opt;
+	opt.mode = Document::RenderOption::DirectCopy;
+	document()->renderToLayer(document()->current_layer(), layer, nullptr, opt, ui->widget_image_view->synchronizer(), nullptr);
 
 	ui->widget_image_view->update();
 
@@ -394,7 +397,9 @@ void MainWindow::clearSelection()
 void MainWindow::paintLayer(Operation op, Document::Layer const &layer)
 {
 	if (op == Operation::PaintToCurrentLayer) {
-		document()->paintToCurrentLayer(layer, foregroundColor(), ui->widget_image_view->synchronizer(), nullptr);
+		Document::RenderOption opt;
+		opt.brush_color = foregroundColor();
+		document()->paintToCurrentLayer(layer, opt, ui->widget_image_view->synchronizer(), nullptr);
 		return;
 	}
 }
@@ -703,7 +708,10 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 				if (s) {
 					QPixmap pm = s->grabWindow(0);
 					QImage im = pm.toImage().convertToFormat(QImage::Format_RGBA8888);
+					QElapsedTimer t;
+					t.start();
 					setImage(im, true);
+					qDebug() << QString("%1ms").arg(t.elapsed());
 				}
 			}
 		}
@@ -765,12 +773,6 @@ void MainWindow::on_action_edit_copy_triggered()
 	QApplication::clipboard()->setImage(image);
 }
 
-void MainWindow::test()
-{
-}
-
-
-
 void MainWindow::on_action_new_triggered()
 {
 	NewDialog dlg(this);
@@ -788,3 +790,10 @@ void MainWindow::on_action_new_triggered()
 		}
 	}
 }
+
+void MainWindow::test()
+{
+}
+
+
+

@@ -703,16 +703,27 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_P:
 		if (ctrl) {
 			QList<QScreen *> list = QApplication::screens();
-			if (!list.empty()) {
-				QScreen *s = list.front();
-				if (s) {
-					QPixmap pm = s->grabWindow(0);
-					QImage im = pm.toImage().convertToFormat(QImage::Format_RGBA8888);
-					QElapsedTimer t;
-					t.start();
-					setImage(im, true);
-					qDebug() << QString("%1ms").arg(t.elapsed());
+			std::vector<QRect> bounds;
+			for (int i = 0; i < list.size(); i++) {
+				bounds.push_back(list[i]->geometry());
+			}
+			if (!bounds.empty()) {
+				QElapsedTimer t;
+				t.start();
+				QImage im;
+				{
+					QPixmap pm = list.front()->grabWindow(0);
+					im = QImage(pm.width(), pm.height(), QImage::Format_RGBA8888);
+					im.fill(Qt::transparent);
+
+					QPainter pr(&im);
+					for (int i = 0; i < bounds.size(); i++) {
+						QRect r = bounds[i];
+						pr.drawPixmap(r, pm, r);
+					}
 				}
+				setImage(im, true);
+				qDebug() << QString("%1ms").arg(t.elapsed());
 			}
 		}
 		return;

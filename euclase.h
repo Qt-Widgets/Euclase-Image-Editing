@@ -29,6 +29,8 @@ static inline float degamma(float v)
 	return v * v;
 }
 
+struct PixelGrayA;
+
 struct PixelRGBA {
 	uint8_t r, g, b, a;
 	PixelRGBA()
@@ -45,6 +47,11 @@ struct PixelRGBA {
 		, a(a)
 	{
 	}
+	inline PixelRGBA(PixelGrayA const &t);
+	uint8_t gray() const
+	{
+		return euclase::gray(r, g, b);
+	}
 };
 
 struct PixelGrayA {
@@ -59,7 +66,26 @@ struct PixelGrayA {
 		, a(a)
 	{
 	}
+	inline PixelGrayA(PixelRGBA const &t);
+	uint8_t gray() const
+	{
+		return l;
+	}
 };
+
+inline PixelRGBA::PixelRGBA(PixelGrayA const &t)
+	: r(t.l)
+	, g(t.l)
+	, b(t.l)
+	, a(t.a)
+{
+}
+
+inline PixelGrayA::PixelGrayA(PixelRGBA const &t)
+	: l(euclase::gray(t.r, t.g, t.b))
+	, a(t.a)
+{
+}
 
 class FPixelRGB {
 public:

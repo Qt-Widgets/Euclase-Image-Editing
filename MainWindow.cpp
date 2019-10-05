@@ -83,6 +83,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+	clearDocument();
 	delete m;
 	delete ui;
 }
@@ -181,7 +182,8 @@ Brush const &MainWindow::currentBrush() const
 
 void MainWindow::setImage(const QImage &image, bool fitview)
 {
-	clearSelection();
+	clearDocument();
+
 	int w = image.width();
 	int h = image.height();
 	document()->setSize(QSize(w, h));
@@ -267,8 +269,8 @@ void MainWindow::on_action_resize_triggered()
 		sz = dlg.imageSize();
 		unsigned int w = sz.width();
 		unsigned int h = sz.height();
-		if (w < 1) w = 1;
-		if (h < 1) h = 1;
+		w = std::max(w, 1U);
+		h = std::max(h, 1U);
 		QImage newimage = resizeImage(srcimage, w, h, EnlargeMethod::Bicubic);
 		setImage(newimage, true);
 	}
@@ -392,6 +394,12 @@ void MainWindow::onSelectionChanged()
 void MainWindow::clearSelection()
 {
 	document()->clearSelection(synchronizer());
+}
+
+void MainWindow::clearDocument()
+{
+	ui->widget_image_view->stopRendering(false);
+	document()->clear(synchronizer());
 }
 
 void MainWindow::paintLayer(Operation op, Document::Layer const &layer)

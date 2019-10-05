@@ -11,7 +11,7 @@ ImageViewRenderer::ImageViewRenderer(QObject *parent)
 
 ImageViewRenderer::~ImageViewRenderer()
 {
-	abort();
+	abort(true);
 }
 
 void ImageViewRenderer::run()
@@ -21,8 +21,10 @@ void ImageViewRenderer::run()
 		bool quickmask = false;
 		RenderedImage ri;
 		ri.rect = rect_;
-		ri.image = mainwindow_->renderImage(rect_, quickmask, &abort_);
-		emit done(ri);
+		ri.image = mainwindow_->renderImage(ri.rect, quickmask, &abort_);
+		if (!abort_) {
+			emit done(ri);
+		}
 	}
 }
 
@@ -37,9 +39,11 @@ void ImageViewRenderer::request(MainWindow *mw, const QRect &rect)
 	}
 }
 
-void ImageViewRenderer::abort()
+void ImageViewRenderer::abort(bool wait)
 {
 	abort_ = true;
-	wait();
+	if (wait) {
+		QThread::wait();
+	}
 }
 

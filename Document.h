@@ -314,6 +314,7 @@ public:
 	QImage renderSelection(const QRect &r, QMutex *sync, bool *abort) const;
 	void changeSelection(SelectionOperation op, QRect const &rect, QMutex *sync);
 	QImage crop(const QRect &r, QMutex *sync, bool *abort) const;
+	void clear(QMutex *sync);
 };
 
 #endif // DOCUMENT_H

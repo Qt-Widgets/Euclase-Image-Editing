@@ -40,6 +40,7 @@ struct ImageViewWidget::Private {
 	double image_scale = 1;
 	double scroll_origin_x = 0;
 	double scroll_origin_y = 0;
+	QPoint mouse_pos;
 	QPoint mouse_press_pos;
 	int wheel_delta = 0;
 	QPointF cursor_anchor_pos;
@@ -84,6 +85,7 @@ ImageViewWidget::ImageViewWidget(QWidget *parent)
 
 ImageViewWidget::~ImageViewWidget()
 {
+	stopRendering(true);
 	delete m;
 }
 
@@ -107,6 +109,13 @@ void ImageViewWidget::bind(MainWindow *mainwindow, QScrollBar *vsb, QScrollBar *
 	m->mainwindow = mainwindow;
 	m->v_scroll_bar = vsb;
 	m->h_scroll_bar = hsb;
+}
+
+void ImageViewWidget::stopRendering(bool wait)
+{
+	m->renderer->abort(wait);
+	m->rendered_image = {};
+	m->destination_rect = {};
 }
 
 QPointF ImageViewWidget::mapFromViewportToDocument(QPointF const &pos)
@@ -326,8 +335,8 @@ void ImageViewWidget::setImageScale(double scale, bool updateview)
 {
 	if (scale < 1.0 / MIN_SCALE) scale = 1.0 / MIN_SCALE;
 	if (scale > MAX_SCALE) scale = MAX_SCALE;
-	m->image_scale = scale;
 
+	m->image_scale = scale;
 	emit scaleChanged(m->image_scale);
 
 	if (updateview) {
@@ -459,94 +468,97 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 {
 	int doc_w = document()->width();
 	int doc_h = document()->height();
-	QPainter pr(this);
-	pr.fillRect(rect(), QColor(240, 240, 240));
-	int w = m->destination_rect.width();
-	int h = m->destination_rect.height();
+	if (doc_w > 0 && doc_h > 0) {
+		QPainter pr(this);
+		pr.fillRect(rect(), QColor(240, 240, 240));
 
-	// 画像
-	if (w > 0 && h > 0) {
-		if (!m->rendered_image.image.isNull()) {
-			QImage image = m->rendered_image.image;
-			QPointF org = mapFromDocumentToViewport(QPointF(0, 0));
-			int ox = (int)floor(org.x() + 0.5);
-			int oy = (int)floor(org.y() + 0.5);
-			for (int y = 0; y < image.height(); y += 64) {
-				for (int x = 0; x < image.width(); x += 64) {
-					int src_x0 = m->rendered_image.rect.x() + x;
-					int src_y0 = m->rendered_image.rect.y() + y;
-					int src_x1 = m->rendered_image.rect.x() + std::min(x + 65, image.width());
-					int src_y1 = m->rendered_image.rect.y() + std::min(y + 65, image.height());
-					QPointF pt0(src_x0, src_y0);
-					QPointF pt1(src_x1, src_y1);
-					pt0 = mapFromDocumentToViewport(pt0);
-					pt1 = mapFromDocumentToViewport(pt1);
-					int dst_x0 = (int)floor(pt0.x() + 0.5);
-					int dst_y0 = (int)floor(pt0.y() + 0.5);
-					int dst_x1 = (int)floor(pt1.x() + 0.5);
-					int dst_y1 = (int)floor(pt1.y() + 0.5);
-					if (dst_x0 >= width()) continue;
-					if (dst_y0 >= height()) continue;
-					if (dst_x1 <= 0) continue;
-					if (dst_y1 <= 0) continue;
-					QRect sr(x, y, src_x1 - src_x0, src_y1 - src_y0);
-					QRect dr(dst_x0, dst_y0, dst_x1 - dst_x0, dst_y1 - dst_y0);
-					QImage tmpimg(dr.width(), dr.height(), QImage::Format_RGBA8888);
-					{
-						QPainter pr2(&tmpimg);
-						pr2.setBrushOrigin(ox - dr.x(), oy - dr.y());
-						pr2.fillRect(tmpimg.rect(), TransparentCheckerBrush::brush());
-						pr2.drawImage(QRect(0, 0, dr.width(), dr.height()), image, sr);
+		// 画像
+		int img_w = m->destination_rect.width();
+		int img_h = m->destination_rect.height();
+		if (img_w > 0 && img_h > 0) {
+			if (!m->rendered_image.image.isNull()) {
+				QImage image = m->rendered_image.image;
+				QPointF org = mapFromDocumentToViewport(QPointF(0, 0));
+				int ox = (int)floor(org.x() + 0.5);
+				int oy = (int)floor(org.y() + 0.5);
+				for (int y = 0; y < image.height(); y += 64) {
+					for (int x = 0; x < image.width(); x += 64) {
+						int src_x0 = m->rendered_image.rect.x() + x;
+						int src_y0 = m->rendered_image.rect.y() + y;
+						int src_x1 = m->rendered_image.rect.x() + std::min(x + 65, image.width());
+						int src_y1 = m->rendered_image.rect.y() + std::min(y + 65, image.height());
+						QPointF pt0(src_x0, src_y0);
+						QPointF pt1(src_x1, src_y1);
+						pt0 = mapFromDocumentToViewport(pt0);
+						pt1 = mapFromDocumentToViewport(pt1);
+						int dst_x0 = (int)floor(pt0.x() + 0.5);
+						int dst_y0 = (int)floor(pt0.y() + 0.5);
+						int dst_x1 = (int)floor(pt1.x() + 0.5);
+						int dst_y1 = (int)floor(pt1.y() + 0.5);
+						if (dst_x0 >= width()) continue;
+						if (dst_y0 >= height()) continue;
+						if (dst_x1 <= 0) continue;
+						if (dst_y1 <= 0) continue;
+						QRect sr(x, y, src_x1 - src_x0, src_y1 - src_y0);
+						QRect dr(dst_x0, dst_y0, dst_x1 - dst_x0, dst_y1 - dst_y0);
+						if (sr.width() > 0 && sr.height() > 0 && dr.width() > 0 && dr.height() > 0) {
+							QImage tmpimg(dr.width(), dr.height(), QImage::Format_RGBA8888);
+							{
+								QPainter pr2(&tmpimg);
+								pr2.setBrushOrigin(ox - dr.x(), oy - dr.y());
+								pr2.fillRect(tmpimg.rect(), TransparentCheckerBrush::brush());
+								pr2.drawImage(QRect(0, 0, dr.width(), dr.height()), image, sr);
+							}
+							pr.drawImage(dr.x(), dr.y(), tmpimg);
+						}
 					}
-					pr.drawImage(dr.x(), dr.y(), tmpimg);
 				}
 			}
 		}
-	}
 
-	// 選択領域点線
-	if (!m->selection_outline.bitmap.isNull()) {
-		QBrush brush = stripeBrush(false);
-		pr.save();
-		pr.setClipRegion(QRegion(m->selection_outline.bitmap).translated(m->selection_outline.point));
-		pr.setOpacity(0.5);
-		pr.fillRect(0, 0, width(), height(), brush);
-		pr.restore();
-	}
+		// 選択領域点線
+		if (!m->selection_outline.bitmap.isNull()) {
+			QBrush brush = stripeBrush(false);
+			pr.save();
+			pr.setClipRegion(QRegion(m->selection_outline.bitmap).translated(m->selection_outline.point));
+			pr.setOpacity(0.5);
+			pr.fillRect(0, 0, width(), height(), brush);
+			pr.restore();
+		}
 
-	// 範囲指定矩形点滅
-	if (m->rect_visible) {
-		pr.setOpacity(0.5);
-		QBrush brush = stripeBrush(true);
-		double x0 = floor(m->rect_start.x());
-		double y0 = floor(m->rect_start.y());
-		double x1 = floor(m->rect_end.x());
-		double y1 = floor(m->rect_end.y());
-		if (x0 > x1) std::swap(x0, x1);
-		if (y0 > y1) std::swap(y0, y1);
-		QPointF pt;
-		pt = mapFromDocumentToViewport(QPointF(x0, y0));
-		x0 = floor(pt.x());
-		y0 = floor(pt.y());
-		pt = mapFromDocumentToViewport(QPointF(x1 + 1, y1 + 1));
-		x1 = floor(pt.x());
-		y1 = floor(pt.y());
-		misc::drawFrame(&pr, x0, y0, x1 - x0, y1 - y0, brush, brush);
-	}
+		// 範囲指定矩形点滅
+		if (m->rect_visible) {
+			pr.setOpacity(0.5);
+			QBrush brush = stripeBrush(true);
+			double x0 = floor(m->rect_start.x());
+			double y0 = floor(m->rect_start.y());
+			double x1 = floor(m->rect_end.x());
+			double y1 = floor(m->rect_end.y());
+			if (x0 > x1) std::swap(x0, x1);
+			if (y0 > y1) std::swap(y0, y1);
+			QPointF pt;
+			pt = mapFromDocumentToViewport(QPointF(x0, y0));
+			x0 = floor(pt.x());
+			y0 = floor(pt.y());
+			pt = mapFromDocumentToViewport(QPointF(x1 + 1, y1 + 1));
+			x1 = floor(pt.x());
+			y1 = floor(pt.y());
+			misc::drawFrame(&pr, x0, y0, x1 - x0, y1 - y0, brush, brush);
+		}
 
-	// 外周
-	pr.setRenderHint(QPainter::Antialiasing);
-	if (doc_w > 0 && doc_h > 0) {
-		QPointF pt0(0, 0);
-		QPointF pt1(doc_w, doc_h);
-		pt0 = mapFromDocumentToViewport(pt0);
-		pt1 = mapFromDocumentToViewport(pt1);
-		int x = (int)floor(pt0.x() + 0.5);
-		int y = (int)floor(pt0.y() + 0.5);
-		int w = (int)floor(pt1.x() + 0.5) - x;
-		int h = (int)floor(pt1.y() + 0.5) - y;
-		QPen pen(Qt::black, 1);
-		pr.drawRect(x, y, w, h);
+		// 外周
+		{
+			pr.setRenderHint(QPainter::Antialiasing);
+			QPointF pt0(0, 0);
+			QPointF pt1(doc_w, doc_h);
+			pt0 = mapFromDocumentToViewport(pt0);
+			pt1 = mapFromDocumentToViewport(pt1);
+			int x = (int)floor(pt0.x() + 0.5);
+			int y = (int)floor(pt0.y() + 0.5);
+			int w = (int)floor(pt1.x() + 0.5) - x;
+			int h = (int)floor(pt1.y() + 0.5) - y;
+			pr.drawRect(x, y, w, h);
+		}
 	}
 }
 
@@ -572,6 +584,9 @@ void ImageViewWidget::mousePressEvent(QMouseEvent *e)
 void ImageViewWidget::mouseMoveEvent(QMouseEvent *)
 {
 	QPoint pos = mapFromGlobal(QCursor::pos());
+	if (m->mouse_pos == pos) return;
+	m->mouse_pos = pos;
+
 	if (m->left_button && hasFocus()) {
 		if (!mainwindow()->onMouseMove(pos.x(), pos.y(), true)) {
 			clearSelectionOutline();
@@ -580,6 +595,7 @@ void ImageViewWidget::mouseMoveEvent(QMouseEvent *)
 			scrollImage(m->scroll_origin_x - delta_x, m->scroll_origin_y - delta_y, true);
 		}
 	}
+
 	m->cursor_anchor_pos = mapFromViewportToDocument(pos);
 	m->wheel_delta = 0;
 }

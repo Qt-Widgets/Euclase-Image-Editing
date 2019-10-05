@@ -50,6 +50,7 @@ private:
 	void onSelectionChanged();
 	void clearSelection();
 	QImage selectedImage() const;
+	void clearDocument();
 protected:
 	void keyPressEvent(QKeyEvent *event);
 public:

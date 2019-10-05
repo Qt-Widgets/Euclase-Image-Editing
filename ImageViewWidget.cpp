@@ -370,14 +370,19 @@ void ImageViewWidget::zoomToCursor(double scale)
 
 void ImageViewWidget::zoomToCenter(double scale)
 {
+	clearSelectionOutline();
+
+	QPointF pos(width() / 2.0, height() / 2.0);
+	m->cursor_anchor_pos = mapFromViewportToDocument(pos);
+
 	setImageScale(scale, false);
 	updateScrollBarRange();
 
-	double x = m->center_anchor_pos.x() * m->image_scale;
-	double y = m->center_anchor_pos.y() * m->image_scale;
+	double x = m->cursor_anchor_pos.x() * m->image_scale + width() / 2.0 - pos.x();
+	double y = m->cursor_anchor_pos.y() * m->image_scale + height() / 2.0 - pos.y();
 	scrollImage(x, y, true);
 
-	updateCursorAnchorPos();
+	updateCenterAnchorPos();
 }
 
 void ImageViewWidget::scale100()
@@ -456,8 +461,6 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 	int doc_h = document()->height();
 	QPainter pr(this);
 	pr.fillRect(rect(), QColor(240, 240, 240));
-	int x = m->destination_rect.x();
-	int y = m->destination_rect.y();
 	int w = m->destination_rect.width();
 	int h = m->destination_rect.height();
 

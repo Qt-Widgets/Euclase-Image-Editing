@@ -703,29 +703,42 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_P:
 		if (ctrl) {
 			QList<QScreen *> list = QApplication::screens();
+			QRect rect;
 			std::vector<QRect> bounds;
 			for (int i = 0; i < list.size(); i++) {
-				bounds.push_back(list[i]->geometry());
+				QRect r = list[i]->geometry();
+				if (i == 0) {
+					rect = r;
+				} else {
+					rect = rect.united(r);
+				}
+				bounds.push_back(r);
 			}
 			if (!bounds.empty()) {
 				QElapsedTimer t;
 				t.start();
 				QImage im;
 				{
-					QPixmap pm = list.front()->grabWindow(0);
-					im = QImage(pm.width(), pm.height(), QImage::Format_RGBA8888);
+					im = QImage(rect.width(), rect.height(), QImage::Format_RGBA8888);
 					im.fill(Qt::transparent);
 
 					QPainter pr(&im);
 					for (int i = 0; i < bounds.size(); i++) {
+						QPixmap pm = list[i]->grabWindow(0);
 						QRect r = bounds[i];
-						pr.drawPixmap(r, pm, r);
+						pr.drawPixmap(r, pm, pm.rect());
 					}
 				}
 				setImage(im, true);
 				qDebug() << QString("%1ms").arg(t.elapsed());
 			}
 		}
+		return;
+	case Qt::Key_Plus:
+		ui->widget_image_view->zoomIn();
+		return;
+	case Qt::Key_Minus:
+		ui->widget_image_view->zoomOut();
 		return;
 	}
 	QMainWindow::keyPressEvent(event);

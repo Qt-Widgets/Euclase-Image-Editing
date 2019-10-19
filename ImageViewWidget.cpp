@@ -531,82 +531,25 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 
 		// カーソル
 		{
-			auto DrawTopLeftCursor = [](QPainter *painter, int x, int y, QBrush const &brush){
-				int w = 32;
-				int h = 32;
-				QPixmap pm(w, h);
-				pm.fill(Qt::transparent);
-				{
-					QPainter pr(&pm);
-					pr.fillRect(w - 6, 0, 3, h - 3, brush);
-					pr.fillRect(0, h - 6, w - 3, 3, brush);
-					pr.fillRect(w - 1, 0, 1, h - 3, brush);
-					pr.fillRect(0, h - 1, w - 3, 1, brush);
-				}
-				painter->drawPixmap(x - pm.width() + 1, y - pm.height() + 1, pm);
-			};
-			auto DrawTopRightCursor = [](QPainter *painter, int x, int y, QBrush const &brush){
-				int w = 32;
-				int h = 32;
-				QPixmap pm(w, h);
-				pm.fill(Qt::transparent);
-				{
-					QPainter pr(&pm);
-					pr.fillRect(0, 0, 1, h - 3, brush);
-					pr.fillRect(3, 0, 3, h - 3, brush);
-					pr.fillRect(3, h - 6, w - 3, 3, brush);
-					pr.fillRect(3, h - 1, w - 3, 1, brush);
-				}
-				painter->drawPixmap(x, y - pm.height() + 1, pm);
-			};
-			auto DrawBottomLeftCursor = [](QPainter *painter, int x, int y, QBrush const &brush){
-				int w = 32;
-				int h = 32;
-				QPixmap pm(w, h);
-				pm.fill(Qt::transparent);
-				{
-					QPainter pr(&pm);
-					pr.fillRect(0, 0, w - 3, 1, brush);
-					pr.fillRect(0, 3, h - 3, 3, brush);
-					pr.fillRect(w - 1, 3, 1, h - 3, brush);
-					pr.fillRect(w - 6, 3, 3, h - 3, brush);
-				}
-				painter->drawPixmap(x - pm.width() + 1, y, pm);
-			};
-			auto DrawBottomRightCursor = [](QPainter *painter, int x, int y, QBrush const &brush){
-				int w = 32;
-				int h = 32;
-				QPixmap pm(w, h);
-				pm.fill(Qt::transparent);
-				{
-					QPainter pr(&pm);
-					pr.fillRect(3, 0, w - 3, 1, brush);
-					pr.fillRect(0, 3, 1, h - 3, brush);
-					pr.fillRect(3, 3, w - 3, 3, brush);
-					pr.fillRect(3, 3, 3, h - 3, brush);
-				}
-				painter->drawPixmap(x, y, pm);
-			};
-			DrawTopLeftCursor(&pr, (int)x0, (int)y0, blink_brush);
-			DrawTopRightCursor(&pr, (int)x1, (int)y0, blink_brush);
-			DrawBottomLeftCursor(&pr, (int)x0, (int)y1, blink_brush);
-			DrawBottomRightCursor(&pr, (int)x1, (int)y1, blink_brush);
-			{
-				int x, y;
-				x = (x0 + x1) / 2;
-				y = y0;
-				pr.fillRect(x - 4, y - 4, 9, 9, blink_brush);
-				x = (x0 + x1) / 2;
-				y = y1;
-				pr.fillRect(x - 4, y - 4, 9, 9, blink_brush);
-				x = x0;
-				y = (y0 + y1) / 2;
-				pr.fillRect(x - 4, y - 4, 9, 9, blink_brush);
-				x = x1;
-				y = (y0 + y1) / 2;
-				pr.fillRect(x - 4, y - 4, 9, 9, blink_brush);
-			}
+			int x, y;
 
+			pr.fillRect(x0 - 4, y0 - 4, 9, 9, blink_brush);
+			pr.fillRect(x1 - 4, y0 - 4, 9, 9, blink_brush);
+			pr.fillRect(x0 - 4, y1 - 4, 9, 9, blink_brush);
+			pr.fillRect(x1 - 4, y1 - 4, 9, 9, blink_brush);
+
+			x = (x0 + x1) / 2;
+			y = y0;
+			pr.fillRect(x - 4, y - 4, 9, 9, blink_brush);
+			x = (x0 + x1) / 2;
+			y = y1;
+			pr.fillRect(x - 4, y - 4, 9, 9, blink_brush);
+			x = x0;
+			y = (y0 + y1) / 2;
+			pr.fillRect(x - 4, y - 4, 9, 9, blink_brush);
+			x = x1;
+			y = (y0 + y1) / 2;
+			pr.fillRect(x - 4, y - 4, 9, 9, blink_brush);
 		}
 	}
 

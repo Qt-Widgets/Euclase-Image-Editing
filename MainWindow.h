@@ -44,7 +44,6 @@ private:
 		PaintToCurrentLayer,
 	};
 	void paintLayer(Operation op, const Document::Layer &layer);
-	void changeSelection(Document::SelectionOperation op);
 
 	void drawBrush(bool one);
 	void test();

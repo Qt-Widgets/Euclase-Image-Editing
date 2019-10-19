@@ -295,6 +295,7 @@ void MainWindow::openFile(QString const &path)
 void MainWindow::on_action_file_open_triggered()
 {
 	QString path = QFileDialog::getOpenFileName(this);
+	if (path.isEmpty()) return;
 	openFile(path);
 }
 
@@ -409,22 +410,6 @@ void MainWindow::paintLayer(Operation op, Document::Layer const &layer)
 		document()->paintToCurrentLayer(layer, opt, ui->widget_image_view->synchronizer(), nullptr);
 		return;
 	}
-}
-
-void MainWindow::changeSelection(Document::SelectionOperation op)
-{
-//	int x0 = floor(m->topleft_pt.x());
-//	int y0 = floor(m->topleft_pt.y());
-//	int x1 = floor(m->bottomright_pt.x());
-//	int y1 = floor(m->bottomright_pt.y());
-//	if (x0 > x1) std::swap(x0, x1);
-//	if (y0 > y1) std::swap(y0, y1);
-//	int x = x0;
-//	int y = y0;
-//	int w = x1 - x0 + 1;
-//	int h = y1 - y0 + 1;
-//	document()->changeSelection(op, QRect(x, y, w, h), synchronizer());
-//	onSelectionChanged();
 }
 
 void MainWindow::drawBrush(bool one)
@@ -641,22 +626,26 @@ bool MainWindow::onMouseLeftButtonPress(int x, int y)
 		if (m->rect_handle != RectHandle::None) {
 			m->topleft_dpt += QPointF(0.01, 0.01);
 			m->bottomright_dpt += QPointF(-0.01, -0.01);
+			double x0 = m->topleft_dpt.x();
+			double y0 = m->topleft_dpt.y();
+			double x1 = m->bottomright_dpt.x();
+			double y1 = m->bottomright_dpt.y();
 			if (m->rect_handle == RectHandle::TopLeft) {
 				m->anchor_dpt = m->topleft_dpt;
 			} else if (m->rect_handle == RectHandle::TopRight) {
-				m->anchor_dpt = QPointF(m->bottomright_dpt.x(), m->topleft_dpt.y());
+				m->anchor_dpt = QPointF(x1, y0);
 			} else if (m->rect_handle == RectHandle::BottomLeft) {
-				m->anchor_dpt = QPointF(m->topleft_dpt.x(), m->bottomright_dpt.y());
+				m->anchor_dpt = QPointF(x0, y1);
 			} else if (m->rect_handle == RectHandle::BottomRight) {
 				m->anchor_dpt = m->bottomright_dpt;
 			} else if (m->rect_handle == RectHandle::Top) {
-				m->anchor_dpt = QPointF((m->topleft_dpt.x() + m->bottomright_dpt.x()) / 2, m->topleft_dpt.y());
+				m->anchor_dpt = QPointF((x0 + x1) / 2, y0);
 			} else if (m->rect_handle == RectHandle::Left) {
-				m->anchor_dpt = QPointF(m->topleft_dpt.x(), (m->topleft_dpt.y() + m->bottomright_dpt.y()) / 2);
+				m->anchor_dpt = QPointF(x0, (y0 + y1) / 2);
 			} else if (m->rect_handle == RectHandle::Right) {
-				m->anchor_dpt = QPointF(m->bottomright_dpt.x(), (m->topleft_dpt.y() + m->bottomright_dpt.y()) / 2);
+				m->anchor_dpt = QPointF(x1, (y0 + y1) / 2);
 			} else if (m->rect_handle == RectHandle::Bottom) {
-				m->anchor_dpt = QPointF((m->topleft_dpt.x() + m->bottomright_dpt.x()) / 2, m->bottomright_dpt.y());
+				m->anchor_dpt = QPointF((x0 + x1) / 2, y1);
 			}
 		}
 		if (m->rect_handle == RectHandle::None) {
@@ -730,6 +719,7 @@ bool MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
 	}
 
 	if (tool == Tool::Rect) {
+
 		if (leftbutton) {
 			m->topleft_dpt = m->rect_topleft_dpt;
 			m->bottomright_dpt = m->rect_bottomright_dpt;
@@ -869,7 +859,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 					im.fill(Qt::transparent);
 
 					QPainter pr(&im);
-					for (int i = 0; i < bounds.size(); i++) {
+					for (int i = 0; i < (int)bounds.size(); i++) {
 						QRect r = bounds[i];
 						pr.drawPixmap(r, pm, r);
 					}

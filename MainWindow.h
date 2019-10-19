@@ -22,6 +22,10 @@ public:
 	};
 	enum RectHandle {
 		None,
+		Top,
+		Left,
+		Right,
+		Bottom,
 		TopLeft,
 		TopRight,
 		BottomLeft,
@@ -60,6 +64,7 @@ private:
 	QPointF pointOnDocument(int x, int y) const;
 	QPointF mapFromViewportToDocument(const QPointF &pt) const;
 	QPointF mapFromDocumentToViewport(const QPointF &pt) const;
+	void setRect();
 protected:
 	void keyPressEvent(QKeyEvent *event);
 public:

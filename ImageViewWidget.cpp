@@ -511,10 +511,11 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 		pr.restore();
 	}
 
+	QBrush blink_brush = stripeBrush(true);
+
 	// 範囲指定矩形点滅
 	if (m->rect_visible) {
-		pr.setOpacity(0.5);
-		QBrush brush = stripeBrush(true);
+		pr.setOpacity(0.25);
 		double x0 = floor(m->rect_start.x());
 		double y0 = floor(m->rect_start.y());
 		double x1 = floor(m->rect_end.x());
@@ -528,7 +529,72 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 		pt = mapFromDocumentToViewport(QPointF(x1 + 1, y1 + 1));
 		x1 = floor(pt.x());
 		y1 = floor(pt.y());
-		misc::drawFrame(&pr, x0, y0, x1 - x0, y1 - y0, brush, brush);
+		misc::drawFrame(&pr, x0, y0, x1 - x0, y1 - y0, blink_brush, blink_brush);
+
+		// カーソル
+		{
+			auto DrawTopLeftCursor = [](QPainter *painter, int x, int y, QBrush const &brush){
+				int w = 32;
+				int h = 32;
+				QPixmap pm(w, h);
+				pm.fill(Qt::transparent);
+				{
+					QPainter pr(&pm);
+					pr.fillRect(w - 6, 0, 3, h - 3, brush);
+					pr.fillRect(0, h - 6, w - 3, 3, brush);
+					pr.fillRect(w - 1, 0, 1, h - 3, brush);
+					pr.fillRect(0, h - 1, w - 3, 1, brush);
+				}
+				painter->drawPixmap(x - pm.width() + 1, y - pm.height() + 1, pm);
+			};
+			auto DrawTopRightCursor = [](QPainter *painter, int x, int y, QBrush const &brush){
+				int w = 32;
+				int h = 32;
+				QPixmap pm(w, h);
+				pm.fill(Qt::transparent);
+				{
+					QPainter pr(&pm);
+					pr.fillRect(0, 0, 1, h - 3, brush);
+					pr.fillRect(3, 0, 3, h - 3, brush);
+					pr.fillRect(3, h - 6, w - 3, 3, brush);
+					pr.fillRect(3, h - 1, w - 3, 1, brush);
+				}
+				painter->drawPixmap(x - 1, y - pm.height() + 1, pm);
+			};
+			auto DrawBottomLeftCursor = [](QPainter *painter, int x, int y, QBrush const &brush){
+				int w = 32;
+				int h = 32;
+				QPixmap pm(w, h);
+				pm.fill(Qt::transparent);
+				{
+					QPainter pr(&pm);
+					pr.fillRect(0, 0, w - 3, 1, brush);
+					pr.fillRect(0, 3, h - 3, 3, brush);
+					pr.fillRect(w - 1, 3, 1, h - 3, brush);
+					pr.fillRect(w - 6, 3, 3, h - 3, brush);
+				}
+				painter->drawPixmap(x - pm.width() + 1, y - 1, pm);
+			};
+			auto DrawBottomRightCursor = [](QPainter *painter, int x, int y, QBrush const &brush){
+				int w = 32;
+				int h = 32;
+				QPixmap pm(w, h);
+				pm.fill(Qt::transparent);
+				{
+					QPainter pr(&pm);
+					pr.fillRect(3, 0, w - 3, 1, brush);
+					pr.fillRect(0, 3, 1, h - 3, brush);
+					pr.fillRect(3, 3, w - 3, 3, brush);
+					pr.fillRect(3, 3, 3, h - 3, brush);
+				}
+				painter->drawPixmap(x - 1, y - 1, pm);
+			};
+			DrawTopLeftCursor(&pr, (int)x0, (int)y0, blink_brush);
+			DrawTopRightCursor(&pr, (int)x1, (int)y0, blink_brush);
+			DrawBottomLeftCursor(&pr, (int)x0, (int)y1, blink_brush);
+			DrawBottomRightCursor(&pr, (int)x1, (int)y1, blink_brush);
+
+		}
 	}
 
 	// 外周
@@ -542,9 +608,9 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 		int y = (int)floor(pt0.y() + 0.5);
 		int w = (int)floor(pt1.x() + 0.5) - x;
 		int h = (int)floor(pt1.y() + 0.5) - y;
-		QPen pen(Qt::black, 1);
 		pr.drawRect(x, y, w, h);
 	}
+
 }
 
 void ImageViewWidget::resizeEvent(QResizeEvent *)

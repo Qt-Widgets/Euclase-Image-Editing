@@ -92,14 +92,14 @@
             <widget class="SaturationBrightnessWidget" name="widget_color" native="true">
              <property name="minimumSize">
               <size>
-               <width>220</width>
-               <height>220</height>
+               <width>300</width>
+               <height>300</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>220</width>
-               <height>220</height>
+               <width>300</width>
+               <height>300</height>
               </size>
              </property>
             </widget>
@@ -212,13 +212,13 @@
               <widget class="QSpinBox" name="spinBox_hsv_h">
                <property name="minimumSize">
                 <size>
-                 <width>50</width>
+                 <width>70</width>
                  <height>0</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>50</width>
+                 <width>70</width>
                  <height>16777215</height>
                 </size>
                </property>
@@ -253,13 +253,13 @@
               <widget class="QSpinBox" name="spinBox_hsv_s">
                <property name="minimumSize">
                 <size>
-                 <width>50</width>
+                 <width>70</width>
                  <height>0</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>50</width>
+                 <width>70</width>
                  <height>16777215</height>
                 </size>
                </property>
@@ -294,13 +294,13 @@
               <widget class="QSpinBox" name="spinBox_hsv_v">
                <property name="minimumSize">
                 <size>
-                 <width>50</width>
+                 <width>70</width>
                  <height>0</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>50</width>
+                 <width>70</width>
                  <height>16777215</height>
                 </size>
                </property>
@@ -403,13 +403,13 @@
               <widget class="QSpinBox" name="spinBox_rgb_r">
                <property name="minimumSize">
                 <size>
-                 <width>50</width>
+                 <width>70</width>
                  <height>0</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>50</width>
+                 <width>70</width>
                  <height>16777215</height>
                 </size>
                </property>
@@ -444,13 +444,13 @@
               <widget class="QSpinBox" name="spinBox_rgb_g">
                <property name="minimumSize">
                 <size>
-                 <width>50</width>
+                 <width>70</width>
                  <height>0</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>50</width>
+                 <width>70</width>
                  <height>16777215</height>
                 </size>
                </property>
@@ -485,13 +485,13 @@
               <widget class="QSpinBox" name="spinBox_rgb_b">
                <property name="minimumSize">
                 <size>
-                 <width>50</width>
+                 <width>70</width>
                  <height>0</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>50</width>
+                 <width>70</width>
                  <height>16777215</height>
                 </size>
                </property>
@@ -612,6 +612,18 @@
              </item>
              <item>
               <widget class="QSpinBox" name="spinBox_brush_softness">
+               <property name="minimumSize">
+                <size>
+                 <width>70</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>70</width>
+                 <height>16777215</height>
+                </size>
+               </property>
                <property name="maximum">
                 <number>100</number>
                </property>

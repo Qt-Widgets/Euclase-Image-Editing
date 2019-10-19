@@ -376,6 +376,13 @@ void Document::clearSelection(QMutex *sync)
 	selection_layer()->clear(sync);
 }
 
+void Document::clear(QMutex *sync)
+{
+	m->size = QSize();
+	clearSelection(sync);
+	current_layer()->clear(sync);
+}
+
 void Document::paintToCurrentLayer(Layer const &source, RenderOption const &opt, QMutex *sync, bool *abort)
 {
 	renderToLayer(&m->current_layer, source, selection_layer(), opt, sync, abort);

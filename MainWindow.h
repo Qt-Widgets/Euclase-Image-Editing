@@ -64,6 +64,7 @@ private:
 	QPointF mapFromViewportToDocument(const QPointF &pt) const;
 	QPointF mapFromDocumentToViewport(const QPointF &pt) const;
 	void setRect();
+	void clearDocument();
 protected:
 	void keyPressEvent(QKeyEvent *event);
 public:

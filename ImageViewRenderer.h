@@ -30,7 +30,7 @@ public:
 	explicit ImageViewRenderer(QObject *parent = nullptr);
 	~ImageViewRenderer();
 	void request(MainWindow *mw, QRect const &rect);
-	void abort();
+	void abort(bool wait);
 signals:
 	void done(RenderedImage const &image);
 };

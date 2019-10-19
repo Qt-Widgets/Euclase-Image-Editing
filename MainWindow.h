@@ -20,6 +20,17 @@ public:
 		Brush,
 		Rect,
 	};
+	enum RectHandle {
+		None,
+		Top,
+		Left,
+		Right,
+		Bottom,
+		TopLeft,
+		TopRight,
+		BottomLeft,
+		BottomRight,
+	};
 private:
 	Ui::MainWindow *ui;
 
@@ -33,7 +44,6 @@ private:
 		PaintToCurrentLayer,
 	};
 	void paintLayer(Operation op, const Document::Layer &layer);
-	void changeSelection(Document::SelectionOperation op);
 
 	void drawBrush(bool one);
 	void test();
@@ -45,11 +55,15 @@ private:
 	void setColorHue(int value);
 	void setColorSaturation(int value);
 	void setColorValue(int value);
-	QPointF pointOnDocument(int x, int y) const;
 	QImage renderFilterTargetImage();
 	void onSelectionChanged();
 	void clearSelection();
 	QImage selectedImage() const;
+	MainWindow::RectHandle rectHitTest(const QPoint &pt) const;
+	QPointF pointOnDocument(int x, int y) const;
+	QPointF mapFromViewportToDocument(const QPointF &pt) const;
+	QPointF mapFromDocumentToViewport(const QPointF &pt) const;
+	void setRect();
 	void clearDocument();
 protected:
 	void keyPressEvent(QKeyEvent *event);

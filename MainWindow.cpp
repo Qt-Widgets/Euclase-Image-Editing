@@ -30,8 +30,15 @@ struct MainWindow::Private {
 
 	MainWindow::Tool current_tool;
 
-	QPointF button_pressed_start_pt;
-	QPointF button_pressed_end_pt;
+	QPoint start_vpt;
+	QPointF anchor_dpt;
+	QPointF topleft_dpt;
+	QPointF bottomright_dpt;
+	QPointF rect_topleft_dpt;
+	QPointF rect_bottomright_dpt;
+
+
+	MainWindow::RectHandle rect_handle = MainWindow::RectHandle::None;
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -290,6 +297,7 @@ void MainWindow::openFile(QString const &path)
 void MainWindow::on_action_file_open_triggered()
 {
 	QString path = QFileDialog::getOpenFileName(this);
+	if (path.isEmpty()) return;
 	openFile(path);
 }
 
@@ -412,22 +420,6 @@ void MainWindow::paintLayer(Operation op, Document::Layer const &layer)
 	}
 }
 
-void MainWindow::changeSelection(Document::SelectionOperation op)
-{
-	int x0 = floor(m->button_pressed_start_pt.x());
-	int y0 = floor(m->button_pressed_start_pt.y());
-	int x1 = floor(m->button_pressed_end_pt.x());
-	int y1 = floor(m->button_pressed_end_pt.y());
-	if (x0 > x1) std::swap(x0, x1);
-	if (y0 > y1) std::swap(y0, y1);
-	int x = x0;
-	int y = y0;
-	int w = x1 - x0 + 1;
-	int h = y1 - y0 + 1;
-	document()->changeSelection(op, QRect(x, y, w, h), synchronizer());
-	onSelectionChanged();
-}
-
 void MainWindow::drawBrush(bool one)
 {
 	auto Put = [&](QPointF const &pt, Brush const &brush){
@@ -527,8 +519,107 @@ QPointF MainWindow::pointOnDocument(int x, int y) const
 	return ui->widget_image_view->mapFromViewportToDocument(pos);
 }
 
+QPointF MainWindow::mapFromViewportToDocument(QPointF const &pt) const
+{
+	return ui->widget_image_view->mapFromViewportToDocument(pt);
+}
+
+QPointF MainWindow::mapFromDocumentToViewport(QPointF const &pt) const
+{
+	return ui->widget_image_view->mapFromDocumentToViewport(pt);
+}
+
+MainWindow::RectHandle MainWindow::rectHitTest(QPoint const &pt) const
+{
+	const int D = 100;
+
+	QPointF topleft = mapFromDocumentToViewport(m->topleft_dpt);
+	QPointF bottomright = mapFromDocumentToViewport(m->bottomright_dpt);
+	if (topleft.x() > bottomright.x()) std::swap(topleft.rx(), bottomright.rx());
+	if (topleft.y() > bottomright.y()) std::swap(topleft.ry(), bottomright.ry());
+	int x0 = topleft.x();
+	int y0 = topleft.y();
+	int x1 = bottomright.x() + 1;
+	int y1 = bottomright.y() + 1;
+
+	int d, dx, dy;
+
+	dx = pt.x() - x1;
+	dy = pt.y() - y1;
+	d = dx * dx + dy * dy;
+	if (d < D) {
+		return RectHandle::BottomRight;
+	}
+
+	dx = pt.x() - x0;
+	dy = pt.y() - y1;
+	d = dx * dx + dy * dy;
+	if (d < D) {
+		return RectHandle::BottomLeft;
+	}
+
+	dx = pt.x() - x1;
+	dy = pt.y() - y0;
+	d = dx * dx + dy * dy;
+	if (d < D) {
+		return RectHandle::TopRight;
+	}
+
+	dx = pt.x() - x0;
+	dy = pt.y() - y0;
+	d = dx * dx + dy * dy;
+	if (d < D) {
+		return RectHandle::TopLeft;
+	}
+
+	dx = pt.x() - (x0 + x1) / 2;
+	dy = pt.y() - y0;
+	d = dx * dx + dy * dy;
+	if (d < D) {
+		return RectHandle::Top;
+	}
+
+	dx = pt.x() - x0;
+	dy = pt.y() - (y0 + y1) / 2;
+	d = dx * dx + dy * dy;
+	if (d < D) {
+		return RectHandle::Left;
+	}
+
+	dx = pt.x() - x1;
+	dy = pt.y() - (y0 + y1) / 2;
+	d = dx * dx + dy * dy;
+	if (d < D) {
+		return RectHandle::Right;
+	}
+
+	dx = pt.x() - (x0 + x1) / 2;
+	dy = pt.y() - y1;
+	d = dx * dx + dy * dy;
+	if (d < D) {
+		return RectHandle::Bottom;
+	}
+
+	return RectHandle::None;
+}
+
+void MainWindow::setRect()
+{
+	double x0 = floor(m->topleft_dpt.x());
+	double y0 = floor(m->topleft_dpt.y());
+	double x1 = floor(m->bottomright_dpt.x());
+	double y1 = floor(m->bottomright_dpt.y());
+	if (x0 > x1) std::swap(x0, x1);
+	if (y0 > y1) std::swap(y0, y1);
+	m->rect_topleft_dpt = { x0, y0 };
+	m->rect_bottomright_dpt = { x1 + 1, y1 + 1 };
+	ui->widget_image_view->showRect(m->rect_topleft_dpt, m->rect_bottomright_dpt);
+}
+
 bool MainWindow::onMouseLeftButtonPress(int x, int y)
 {
+	m->start_vpt = QPoint(x, y);
+
 	Tool tool = currentTool();
 	if (tool == Tool::Scroll) return false;
 
@@ -539,8 +630,38 @@ bool MainWindow::onMouseLeftButtonPress(int x, int y)
 	}
 
 	if (tool == Tool::Rect) {
-		m->button_pressed_start_pt = pointOnDocument(x, y);
-		ui->widget_image_view->showRect(m->button_pressed_start_pt, m->button_pressed_start_pt);
+		m->rect_handle = rectHitTest(m->start_vpt);
+		if (m->rect_handle != RectHandle::None) {
+			m->topleft_dpt += QPointF(0.01, 0.01);
+			m->bottomright_dpt += QPointF(-0.01, -0.01);
+			double x0 = m->topleft_dpt.x();
+			double y0 = m->topleft_dpt.y();
+			double x1 = m->bottomright_dpt.x();
+			double y1 = m->bottomright_dpt.y();
+			if (m->rect_handle == RectHandle::TopLeft) {
+				m->anchor_dpt = m->topleft_dpt;
+			} else if (m->rect_handle == RectHandle::TopRight) {
+				m->anchor_dpt = QPointF(x1, y0);
+			} else if (m->rect_handle == RectHandle::BottomLeft) {
+				m->anchor_dpt = QPointF(x0, y1);
+			} else if (m->rect_handle == RectHandle::BottomRight) {
+				m->anchor_dpt = m->bottomright_dpt;
+			} else if (m->rect_handle == RectHandle::Top) {
+				m->anchor_dpt = QPointF((x0 + x1) / 2, y0);
+			} else if (m->rect_handle == RectHandle::Left) {
+				m->anchor_dpt = QPointF(x0, (y0 + y1) / 2);
+			} else if (m->rect_handle == RectHandle::Right) {
+				m->anchor_dpt = QPointF(x1, (y0 + y1) / 2);
+			} else if (m->rect_handle == RectHandle::Bottom) {
+				m->anchor_dpt = QPointF((x0 + x1) / 2, y1);
+			}
+		}
+		if (m->rect_handle == RectHandle::None) {
+			m->rect_handle = RectHandle::BottomRight;
+			m->anchor_dpt = mapFromViewportToDocument(m->start_vpt);
+			m->topleft_dpt = m->bottomright_dpt = m->anchor_dpt;
+			setRect();
+		}
 		return true;
 	}
 
@@ -562,10 +683,31 @@ bool MainWindow::onMouseMove(int x, int y, bool leftbutton)
 
 	if (tool == Tool::Rect) {
 		if (leftbutton) {
-			m->button_pressed_end_pt = pointOnDocument(x, y);
-			ui->widget_image_view->showRect(m->button_pressed_start_pt, m->button_pressed_end_pt);
-			return true;
+			if (m->rect_handle != RectHandle::None) {
+				QPointF pt = mapFromViewportToDocument(mapFromDocumentToViewport(m->anchor_dpt) + QPointF(x, y) - m->start_vpt);
+				if (m->rect_handle == RectHandle::TopLeft) {
+					m->topleft_dpt = pt;
+				} else if (m->rect_handle == RectHandle::BottomRight) {
+					m->bottomright_dpt = pt;
+				} else if (m->rect_handle == RectHandle::TopRight) {
+					m->topleft_dpt.ry() = pt.y();
+					m->bottomright_dpt.rx() = pt.x();
+				} else if (m->rect_handle == RectHandle::BottomLeft) {
+					m->topleft_dpt.rx() = pt.x();
+					m->bottomright_dpt.ry() = pt.y();
+				} else if (m->rect_handle == RectHandle::Top) {
+					m->topleft_dpt.ry() = pt.y();
+				} else if (m->rect_handle == RectHandle::Left) {
+					m->topleft_dpt.rx() = pt.x();
+				} else if (m->rect_handle == RectHandle::Right) {
+					m->bottomright_dpt.rx() = pt.x();
+				} else if (m->rect_handle == RectHandle::Bottom) {
+					m->bottomright_dpt.ry() = pt.y();
+				}
+				setRect();
+			}
 		}
+		return true;
 	}
 
 	return false;
@@ -585,12 +727,12 @@ bool MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
 	}
 
 	if (tool == Tool::Rect) {
+
 		if (leftbutton) {
-			ui->widget_image_view->hideRect();
-			changeSelection(Document::SelectionOperation::SetSelection);
-			updateImageView();
-			return true;
+			m->topleft_dpt = m->rect_topleft_dpt;
+			m->bottomright_dpt = m->rect_bottomright_dpt;
 		}
+		return true;
 	}
 
 	return false;
@@ -731,7 +873,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 					im.fill(Qt::transparent);
 
 					QPainter pr(&im);
-					for (int i = 0; i < bounds.size(); i++) {
+					for (int i = 0; i < (int)bounds.size(); i++) {
 						QPixmap pm = list[i]->grabWindow(0);
 						QRect r = bounds[i];
 						pr.drawPixmap(r, pm, pm.rect());

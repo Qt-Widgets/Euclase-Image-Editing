@@ -526,39 +526,61 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 			pr.restore();
 		}
 
+		QBrush blink_brush = stripeBrush(true);
+
 		// 範囲指定矩形点滅
 		if (m->rect_visible) {
-			pr.setOpacity(0.5);
-			QBrush brush = stripeBrush(true);
-			double x0 = floor(m->rect_start.x());
-			double y0 = floor(m->rect_start.y());
-			double x1 = floor(m->rect_end.x());
-			double y1 = floor(m->rect_end.y());
+			pr.setOpacity(0.25);
+			double x0 = m->rect_start.x();
+			double y0 = m->rect_start.y();
+			double x1 = m->rect_end.x();
+			double y1 = m->rect_end.y();
 			if (x0 > x1) std::swap(x0, x1);
 			if (y0 > y1) std::swap(y0, y1);
 			QPointF pt;
 			pt = mapFromDocumentToViewport(QPointF(x0, y0));
 			x0 = floor(pt.x());
 			y0 = floor(pt.y());
-			pt = mapFromDocumentToViewport(QPointF(x1 + 1, y1 + 1));
+			pt = mapFromDocumentToViewport(QPointF(x1, y1));
 			x1 = floor(pt.x());
 			y1 = floor(pt.y());
-			misc::drawFrame(&pr, x0, y0, x1 - x0, y1 - y0, brush, brush);
+			misc::drawFrame(&pr, x0, y0, x1 - x0 + 1, y1 - y0 + 1, blink_brush, blink_brush);
+
+			// カーソル
+			{
+				int x, y;
+
+				pr.fillRect(x0 - 4, y0 - 4, 9, 9, blink_brush);
+				pr.fillRect(x1 - 4, y0 - 4, 9, 9, blink_brush);
+				pr.fillRect(x0 - 4, y1 - 4, 9, 9, blink_brush);
+				pr.fillRect(x1 - 4, y1 - 4, 9, 9, blink_brush);
+
+				x = (x0 + x1) / 2;
+				y = y0;
+				pr.fillRect(x - 4, y - 4, 9, 9, blink_brush);
+				x = (x0 + x1) / 2;
+				y = y1;
+				pr.fillRect(x - 4, y - 4, 9, 9, blink_brush);
+				x = x0;
+				y = (y0 + y1) / 2;
+				pr.fillRect(x - 4, y - 4, 9, 9, blink_brush);
+				x = x1;
+				y = (y0 + y1) / 2;
+				pr.fillRect(x - 4, y - 4, 9, 9, blink_brush);
+			}
 		}
 
 		// 外周
-		{
-			pr.setRenderHint(QPainter::Antialiasing);
-			QPointF pt0(0, 0);
-			QPointF pt1(doc_w, doc_h);
-			pt0 = mapFromDocumentToViewport(pt0);
-			pt1 = mapFromDocumentToViewport(pt1);
-			int x = (int)floor(pt0.x() + 0.5);
-			int y = (int)floor(pt0.y() + 0.5);
-			int w = (int)floor(pt1.x() + 0.5) - x;
-			int h = (int)floor(pt1.y() + 0.5) - y;
-			pr.drawRect(x, y, w, h);
-		}
+		pr.setRenderHint(QPainter::Antialiasing);
+		QPointF pt0(0, 0);
+		QPointF pt1(doc_w, doc_h);
+		pt0 = mapFromDocumentToViewport(pt0);
+		pt1 = mapFromDocumentToViewport(pt1);
+		int x = (int)floor(pt0.x() + 0.5);
+		int y = (int)floor(pt0.y() + 0.5);
+		int w = (int)floor(pt1.x() + 0.5) - x;
+		int h = (int)floor(pt1.y() + 0.5) - y;
+		pr.drawRect(x, y, w, h);
 	}
 }
 

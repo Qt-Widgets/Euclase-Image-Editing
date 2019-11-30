@@ -155,6 +155,11 @@ void ImageViewWidget::hideRect()
 	update();
 }
 
+bool ImageViewWidget::isRectVisible() const
+{
+	return m->rect_visible;
+}
+
 QBrush ImageViewWidget::stripeBrush(bool blink)
 {
 	int mask = blink ? 2 : 4;
@@ -530,7 +535,7 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 
 		// 範囲指定矩形点滅
 		if (m->rect_visible) {
-			pr.setOpacity(0.25);
+			pr.setOpacity(0.2);
 			double x0 = m->rect_start.x();
 			double y0 = m->rect_start.y();
 			double x1 = m->rect_end.x();
@@ -565,6 +570,10 @@ void ImageViewWidget::paintEvent(QPaintEvent *)
 				y = (y0 + y1) / 2;
 				pr.fillRect(x - 4, y - 4, 9, 9, blink_brush);
 				x = x1;
+				y = (y0 + y1) / 2;
+				pr.fillRect(x - 4, y - 4, 9, 9, blink_brush);
+
+				x = (x0 + x1) / 2;
 				y = (y0 + y1) / 2;
 				pr.fillRect(x - 4, y - 4, 9, 9, blink_brush);
 			}

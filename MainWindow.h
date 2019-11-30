@@ -22,6 +22,7 @@ public:
 	};
 	enum RectHandle {
 		None,
+		Center,
 		Top,
 		Left,
 		Right,
@@ -65,6 +66,9 @@ private:
 	QPointF mapFromDocumentToViewport(const QPointF &pt) const;
 	void setRect();
 	void clearDocument();
+	void hideRect();
+	bool isRectValid() const;
+	QRect boundsRect() const;
 protected:
 	void keyPressEvent(QKeyEvent *event);
 public:
@@ -131,6 +135,7 @@ private slots:
 	void on_toolButton_rect_clicked();
 	void on_action_edit_copy_triggered();
 	void on_action_new_triggered();
+	void on_action_select_rectangle_triggered();
 };
 
 #endif // MAINWINDOW_H

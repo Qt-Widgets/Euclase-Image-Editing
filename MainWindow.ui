@@ -936,9 +936,16 @@
     <property name="title">
      <string>&amp;Edit</string>
     </property>
+    <widget class="QMenu" name="menu_Bounds">
+     <property name="title">
+      <string>&amp;Bounds</string>
+     </property>
+     <addaction name="action_select_rectangle"/>
+    </widget>
     <addaction name="action_resize"/>
     <addaction name="action_trim"/>
     <addaction name="action_edit_copy"/>
+    <addaction name="menu_Bounds"/>
    </widget>
    <widget class="QMenu" name="menu_File">
     <property name="title">
@@ -1033,6 +1040,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="action_select_rectangle">
+   <property name="text">
+    <string>Select rectangle</string>
    </property>
   </action>
  </widget>

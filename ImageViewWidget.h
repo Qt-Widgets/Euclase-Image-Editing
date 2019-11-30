@@ -73,6 +73,7 @@ public:
 	QBitmap updateSelection_();
 	SelectionOutlineBitmap renderSelectionOutlineBitmap(bool *abort);
 	void stopRendering(bool wait);
+	bool isRectVisible() const;
 private slots:
 	void onRenderingCompleted(const RenderedImage &image);
 	void onSelectionOutlineRenderingCompleted(const SelectionOutlineBitmap &data);

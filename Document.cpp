@@ -374,6 +374,7 @@ void Document::renderToLayer(Layer *target_layer, Layer const &input_layer, Laye
 void Document::clearSelection(QMutex *sync)
 {
 	selection_layer()->clear(sync);
+	selection_layer()->tile_mode_ = true;
 }
 
 void Document::clear(QMutex *sync)

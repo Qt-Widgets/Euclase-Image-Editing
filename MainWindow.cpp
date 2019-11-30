@@ -30,8 +30,10 @@ struct MainWindow::Private {
 
 	MainWindow::Tool current_tool;
 
+	bool mouse_moved = false;
 	QPoint start_vpt;
 	QPointF anchor_dpt;
+	QPointF offset_dpt;
 	QPointF topleft_dpt;
 	QPointF bottomright_dpt;
 	QPointF rect_topleft_dpt;
@@ -69,7 +71,6 @@ MainWindow::MainWindow(QWidget *parent)
 
 	ui->tabWidget->setCurrentWidget(ui->tab_color_hsv);
 
-//	connect(ui->widget_hue, &HueWidget::hueChanged, this, &MainWindow::onHueChanged);
 	connect(ui->widget_color, &SaturationBrightnessWidget::changeColor, this, &MainWindow::setForegroundColor);
 
 	connect(ui->widget_image_view, &ImageViewWidget::scaleChanged, [&](double scale){
@@ -142,11 +143,6 @@ void MainWindow::setForegroundColor(const QColor &color)
 	Set(color.saturation(), ui->horizontalSlider_hsv_s, ui->spinBox_hsv_s);
 	Set(color.value(), ui->horizontalSlider_hsv_v, ui->spinBox_hsv_v);
 
-//	{
-//		bool f = ui->widget_hue->blockSignals(true);
-//		ui->widget_hue->setHue(color.hue());
-//		ui->widget_hue->blockSignals(f);
-//	}
 	{
 		bool f = ui->widget_color->blockSignals(true);
 		ui->widget_color->setHue(color.hue());
@@ -187,6 +183,25 @@ Brush const &MainWindow::currentBrush() const
 	return m->current_brush;
 }
 
+void MainWindow::hideRect()
+{
+	ui->widget_image_view->hideRect();
+}
+
+bool MainWindow::isRectValid() const
+{
+	return ui->widget_image_view->isRectVisible();
+}
+
+QRect MainWindow::boundsRect() const
+{
+	int x = m->rect_topleft_dpt.x();
+	int y = m->rect_topleft_dpt.y();
+	int w = m->rect_bottomright_dpt.x() - x;
+	int h = m->rect_bottomright_dpt.y() - y;
+	return QRect(x, y, w, h);
+}
+
 void MainWindow::setImage(const QImage &image, bool fitview)
 {
 	clearDocument();
@@ -196,6 +211,7 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 	document()->setSize(QSize(w, h));
 	document()->current_layer()->clear(nullptr);
 	document()->current_layer()->tile_mode_ = true;
+	clearSelection();
 
 	Document::Layer layer;
 	layer.setImage(QPoint(0, 0), image);
@@ -211,6 +227,8 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 		updateImageView();
 	}
 	onSelectionChanged();
+
+	hideRect();
 }
 
 void MainWindow::setImage(QByteArray const &ba, bool fitview)
@@ -375,6 +393,9 @@ void MainWindow::on_verticalScrollBar_valueChanged(int value)
 QImage MainWindow::selectedImage() const
 {
 	QRect r = selectionRect();
+	if (r.isEmpty() && isRectValid()) {
+		r = boundsRect();
+	}
 	return document()->crop(r, synchronizer(), nullptr);
 }
 
@@ -544,6 +565,13 @@ MainWindow::RectHandle MainWindow::rectHitTest(QPoint const &pt) const
 
 	int d, dx, dy;
 
+	dx = pt.x() - (x0 + x1) / 2;
+	dy = pt.y() - (y0 + y1) / 2;
+	d = dx * dx + dy * dy;
+	if (d < D) {
+		return RectHandle::Center;
+	}
+
 	dx = pt.x() - x1;
 	dy = pt.y() - y1;
 	d = dx * dx + dy * dy;
@@ -605,10 +633,12 @@ MainWindow::RectHandle MainWindow::rectHitTest(QPoint const &pt) const
 
 void MainWindow::setRect()
 {
-	double x0 = floor(m->topleft_dpt.x());
-	double y0 = floor(m->topleft_dpt.y());
-	double x1 = floor(m->bottomright_dpt.x());
-	double y1 = floor(m->bottomright_dpt.y());
+	QPointF topleft = m->topleft_dpt + m->offset_dpt;
+	QPointF bottomright = m->bottomright_dpt + m->offset_dpt;
+	double x0 = floor(topleft.x());
+	double y0 = floor(topleft.y());
+	double x1 = floor(bottomright.x());
+	double y1 = floor(bottomright.y());
 	if (x0 > x1) std::swap(x0, x1);
 	if (y0 > y1) std::swap(y0, y1);
 	m->rect_topleft_dpt = { x0, y0 };
@@ -618,6 +648,7 @@ void MainWindow::setRect()
 
 bool MainWindow::onMouseLeftButtonPress(int x, int y)
 {
+	m->mouse_moved = false;
 	m->start_vpt = QPoint(x, y);
 
 	Tool tool = currentTool();
@@ -638,7 +669,9 @@ bool MainWindow::onMouseLeftButtonPress(int x, int y)
 			double y0 = m->topleft_dpt.y();
 			double x1 = m->bottomright_dpt.x();
 			double y1 = m->bottomright_dpt.y();
-			if (m->rect_handle == RectHandle::TopLeft) {
+			if (m->rect_handle == RectHandle::Center) {
+				m->anchor_dpt = QPointF((x0 + x1) / 2, (y0 + y1) / 2);
+			} else if (m->rect_handle == RectHandle::TopLeft) {
 				m->anchor_dpt = m->topleft_dpt;
 			} else if (m->rect_handle == RectHandle::TopRight) {
 				m->anchor_dpt = QPointF(x1, y0);
@@ -660,6 +693,7 @@ bool MainWindow::onMouseLeftButtonPress(int x, int y)
 			m->rect_handle = RectHandle::BottomRight;
 			m->anchor_dpt = mapFromViewportToDocument(m->start_vpt);
 			m->topleft_dpt = m->bottomright_dpt = m->anchor_dpt;
+			m->offset_dpt = { 0, 0 };
 			setRect();
 		}
 		return true;
@@ -685,7 +719,9 @@ bool MainWindow::onMouseMove(int x, int y, bool leftbutton)
 		if (leftbutton) {
 			if (m->rect_handle != RectHandle::None) {
 				QPointF pt = mapFromViewportToDocument(mapFromDocumentToViewport(m->anchor_dpt) + QPointF(x, y) - m->start_vpt);
-				if (m->rect_handle == RectHandle::TopLeft) {
+				if (m->rect_handle == RectHandle::Center) {
+					m->offset_dpt = { pt.x() - m->anchor_dpt.x(), pt.y() - m->anchor_dpt.y() };
+				} else if (m->rect_handle == RectHandle::TopLeft) {
 					m->topleft_dpt = pt;
 				} else if (m->rect_handle == RectHandle::BottomRight) {
 					m->bottomright_dpt = pt;
@@ -707,6 +743,7 @@ bool MainWindow::onMouseMove(int x, int y, bool leftbutton)
 				setRect();
 			}
 		}
+		m->mouse_moved = true;
 		return true;
 	}
 
@@ -715,6 +752,9 @@ bool MainWindow::onMouseMove(int x, int y, bool leftbutton)
 
 bool MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
 {
+	bool mouse_moved = m->mouse_moved;
+	m->mouse_moved = false;
+
 	Tool tool = currentTool();
 	if (tool == Tool::Scroll) return false;
 
@@ -731,6 +771,9 @@ bool MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
 		if (leftbutton) {
 			m->topleft_dpt = m->rect_topleft_dpt;
 			m->bottomright_dpt = m->rect_bottomright_dpt;
+			if (!mouse_moved) {
+				hideRect();
+			}
 		}
 		return true;
 	}
@@ -965,9 +1008,20 @@ void MainWindow::on_action_new_triggered()
 	}
 }
 
+void MainWindow::on_action_select_rectangle_triggered()
+{
+	if (isRectValid()) {
+		QRect r = boundsRect();
+		if (r.width() > 0 && r.height() > 0) {
+			Document::SelectionOperation op = Document::SelectionOperation::AddSelection;
+			document()->changeSelection(op, r, synchronizer());
+			onSelectionChanged();
+			updateImageView();
+		}
+	}
+}
+
 void MainWindow::test()
 {
 }
-
-
 

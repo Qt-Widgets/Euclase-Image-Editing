@@ -92,8 +92,9 @@ public:
 	MainWindow::Tool currentTool() const;
 	SelectionOutlineBitmap renderSelectionOutline(bool *abort) const;
 	SelectionOutlineBitmap renderSelectionOutlineBitmap(bool *abort);
+	void setColor(QColor primary_color, QColor secondary_color);
 public slots:
-	void setForegroundColor(QColor const &color);
+	void setCurrentColor(const QColor &primary_color);
 	void setCurrentBrush(const Brush &brush);
 	void onPenDown(double x, double y);
 	void onPenStroke(double x, double y);
@@ -136,6 +137,10 @@ private slots:
 	void on_action_edit_copy_triggered();
 	void on_action_new_triggered();
 	void on_action_select_rectangle_triggered();
+
+	// QObject interface
+public:
+	bool eventFilter(QObject *watched, QEvent *event);
 };
 
 #endif // MAINWINDOW_H

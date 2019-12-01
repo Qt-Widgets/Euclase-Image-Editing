@@ -308,61 +308,6 @@ void misc::dump(QByteArray const *in)
 	dump(ptr, len);
 }
 
-bool misc::isText(QString const &mimetype)
-{
-	return mimetype.startsWith("text/");
-}
-
-bool misc::isSVG(QString const &mimetype)
-{
-	if (mimetype == "image/svg") return true;
-	if (mimetype == "image/svg+xml") return true;
-	return false;
-}
-
-bool misc::isPSD(QString const &mimetype)
-{
-	if (mimetype == "image/vnd.adobe.photoshop") return true;
-	return false;
-}
-
-bool misc::isImage(QString const &mimetype)
-{
-#if 0
-	if (mimetype == "image/jpeg") return true;
-	if (mimetype == "image/jpg") return true;
-	if (mimetype == "image/png") return true;
-	if (mimetype == "image/gif") return true;
-	if (mimetype == "image/bmp") return true;
-	if (mimetype == "image/x-ms-bmp") return true;
-	if (mimetype == "image/x-icon") return true;
-	if (mimetype == "image/tiff") return true;
-	if (isSVG(mimetype)) return true;
-	if (isPSD(mimetype)) return true;
-	return false;
-#else
-	return mimetype.startsWith("image/");
-#endif
-}
-
-QString misc::abbrevBranchName(QString const &name)
-{
-	QStringList sl = name.split('/');
-	if (sl.size() == 1) return sl[0];
-	QString newname;
-	for (int i = 0; i < sl.size(); i++) {
-		QString s = sl[i];
-		if (i + 1 < sl.size()) {
-			s = s.mid(0, 1);
-		}
-		if (i > 0) {
-			newname += '/';
-		}
-		newname += s;
-	}
-	return newname;
-}
-
 QString misc::determinFileType(QString const &filecommand, QString const &path, bool mime, std::function<void (QString const &, QByteArray *)> const &callback)
 { // ファイルタイプを調べる
 	if (QFileInfo(filecommand).isExecutable()) {

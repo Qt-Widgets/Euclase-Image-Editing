@@ -13,6 +13,7 @@ DESTDIR = $$PWD/_bin
 SOURCES += main.cpp\
 	AlphaBlend.cpp \
     BrushSlider.cpp \
+	ColorPreviewWidget.cpp \
 	Document.cpp \
 	ImageViewRenderer.cpp \
         MainWindow.cpp \
@@ -44,6 +45,7 @@ HEADERS  += MainWindow.h \
     AlphaBlend.h \
     BrushPreviewWidget.h \
     BrushSlider.h \
+    ColorPreviewWidget.h \
     Document.h \
     ImageViewRenderer.h \
     MiraCL.h \

@@ -20,7 +20,8 @@
 
 struct MainWindow::Private {
 	Document doc;
-	QColor foreground_color;
+	QColor primary_color;
+	QColor secondary_color;
 	Brush current_brush;
 
 	double brush_next_distance = 0;
@@ -71,13 +72,13 @@ MainWindow::MainWindow(QWidget *parent)
 
 	ui->tabWidget->setCurrentWidget(ui->tab_color_hsv);
 
-	connect(ui->widget_color, &SaturationBrightnessWidget::changeColor, this, &MainWindow::setForegroundColor);
+	connect(ui->widget_color, &SaturationBrightnessWidget::changeColor, this, &MainWindow::setCurrentColor);
 
 	connect(ui->widget_image_view, &ImageViewWidget::scaleChanged, [&](double scale){
 		ui->widget_brush->changeScale(scale);
 	});
 
-	setForegroundColor(Qt::red);
+	setColor(Qt::black, Qt::white);
 
 	{
 		Brush b;
@@ -87,6 +88,8 @@ MainWindow::MainWindow(QWidget *parent)
 	}
 
 	ui->widget_image_view->setFocus();
+
+	qApp->installEventFilter(this);
 }
 
 MainWindow::~MainWindow()
@@ -123,36 +126,46 @@ int MainWindow::documentHeight() const
 	return d ? d->height() : 0;
 }
 
-void MainWindow::setForegroundColor(const QColor &color)
+void MainWindow::setColor(QColor primary_color, QColor secondary_color)
 {
-	m->foreground_color = color;
+	m->primary_color = primary_color;
+	if (secondary_color.isValid()) {
+		m->secondary_color = secondary_color;
+	}
 
 	auto Set = [&](int v, ColorSlider *slider, QSpinBox *spin){
 		bool f1 = slider->blockSignals(true);
-		slider->setColor(m->foreground_color);
+		slider->setColor(m->primary_color);
 		slider->setValue(v);
 		slider->blockSignals(f1);
 		bool f2 = spin->blockSignals(true);
 		spin->setValue(v);
 		spin->blockSignals(f2);
 	};
-	Set(color.red(), ui->horizontalSlider_rgb_r, ui->spinBox_rgb_r);
-	Set(color.green(), ui->horizontalSlider_rgb_g, ui->spinBox_rgb_g);
-	Set(color.blue(), ui->horizontalSlider_rgb_b, ui->spinBox_rgb_b);
-	Set(color.hue(), ui->horizontalSlider_hsv_h, ui->spinBox_hsv_h);
-	Set(color.saturation(), ui->horizontalSlider_hsv_s, ui->spinBox_hsv_s);
-	Set(color.value(), ui->horizontalSlider_hsv_v, ui->spinBox_hsv_v);
+	Set(primary_color.red(), ui->horizontalSlider_rgb_r, ui->spinBox_rgb_r);
+	Set(primary_color.green(), ui->horizontalSlider_rgb_g, ui->spinBox_rgb_g);
+	Set(primary_color.blue(), ui->horizontalSlider_rgb_b, ui->spinBox_rgb_b);
+	Set(primary_color.hue(), ui->horizontalSlider_hsv_h, ui->spinBox_hsv_h);
+	Set(primary_color.saturation(), ui->horizontalSlider_hsv_s, ui->spinBox_hsv_s);
+	Set(primary_color.value(), ui->horizontalSlider_hsv_v, ui->spinBox_hsv_v);
 
 	{
 		bool f = ui->widget_color->blockSignals(true);
-		ui->widget_color->setHue(color.hue());
+		ui->widget_color->setHue(primary_color.hue());
 		ui->widget_color->blockSignals(f);
 	}
+
+	ui->widget_color_preview->setColor(m->primary_color, m->secondary_color);
+}
+
+void MainWindow::setCurrentColor(const QColor &color)
+{
+	setColor(color, QColor());
 }
 
 QColor MainWindow::foregroundColor() const
 {
-	return m->foreground_color;
+	return m->primary_color;
 }
 
 void MainWindow::setCurrentBrush(const Brush &brush)
@@ -786,42 +799,42 @@ void MainWindow::setColorRed(int value)
 {
 	QColor c = foregroundColor();
 	c = QColor(value, c.green(), c.blue());
-	setForegroundColor(c);
+	setCurrentColor(c);
 }
 
 void MainWindow::setColorGreen(int value)
 {
 	QColor c = foregroundColor();
 	c = QColor(c.red(), value, c.blue());
-	setForegroundColor(c);
+	setCurrentColor(c);
 }
 
 void MainWindow::setColorBlue(int value)
 {
 	QColor c = foregroundColor();
 	c = QColor(c.red(), c.green(), value);
-	setForegroundColor(c);
+	setCurrentColor(c);
 }
 
 void MainWindow::setColorHue(int value)
 {
 	QColor c = foregroundColor();
 	c = QColor::fromHsv(value, c.saturation(), c.value());
-	setForegroundColor(c);
+	setCurrentColor(c);
 }
 
 void MainWindow::setColorSaturation(int value)
 {
 	QColor c = foregroundColor();
 	c = QColor::fromHsv(c.hue(), value, c.value());
-	setForegroundColor(c);
+	setCurrentColor(c);
 }
 
 void MainWindow::setColorValue(int value)
 {
 	QColor c = foregroundColor();
 	c = QColor::fromHsv(c.hue(), c.saturation(), value);
-	setForegroundColor(c);
+	setCurrentColor(c);
 }
 
 void MainWindow::on_horizontalSlider_rgb_r_valueChanged(int value)
@@ -884,57 +897,81 @@ void MainWindow::on_spinBox_hsv_v_valueChanged(int value)
 	setColorValue(value);
 }
 
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+	if (event->type() == QEvent::KeyPress) {
+		if (QWidget *w = qobject_cast<QWidget *>(watched)) {
+			if (isAncestorOf(w)) {
+				QKeyEvent *e = dynamic_cast<QKeyEvent *>(event);
+				bool ctrl = (e->modifiers() & Qt::ControlModifier);
+				int k = e->key();
+				switch (k) {
+				case Qt::Key_B:
+					changeTool(Tool::Brush);
+					return true;
+				case Qt::Key_H:
+					changeTool(Tool::Scroll);
+					return true;
+				case Qt::Key_P:
+					if (ctrl) {
+						QList<QScreen *> list = QApplication::screens();
+						QRect rect;
+						std::vector<QRect> bounds;
+						for (int i = 0; i < list.size(); i++) {
+							QRect r = list[i]->geometry();
+							if (i == 0) {
+								rect = r;
+							} else {
+								rect = rect.united(r);
+							}
+							bounds.push_back(r);
+						}
+						if (!bounds.empty()) {
+							QElapsedTimer t;
+							t.start();
+							QImage im;
+							{
+								im = QImage(rect.width(), rect.height(), QImage::Format_RGBA8888);
+								im.fill(Qt::transparent);
+
+								QPainter pr(&im);
+								for (int i = 0; i < (int)bounds.size(); i++) {
+									QPixmap pm = list[i]->grabWindow(0);
+									QRect r = bounds[i];
+									pr.drawPixmap(r, pm, pm.rect());
+								}
+							}
+							setImage(im, true);
+							qDebug() << QString("%1ms").arg(t.elapsed());
+						}
+					}
+					return true;
+				case Qt::Key_R:
+					changeTool(Tool::Rect);
+					return true;
+				case Qt::Key_T:
+					if (ctrl) {
+						test();
+					}
+					return true;
+				case Qt::Key_X:
+					setColor(m->secondary_color, m->primary_color);
+					return true;
+				case Qt::Key_Plus:
+					ui->widget_image_view->zoomIn();
+					return true;
+				case Qt::Key_Minus:
+					ui->widget_image_view->zoomOut();
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
-	bool ctrl = (event->modifiers() & Qt::ControlModifier);
-	int k = event->key();
-	switch (k) {
-	case Qt::Key_T:
-		if (ctrl) {
-			test();
-		}
-		return;
-	case Qt::Key_P:
-		if (ctrl) {
-			QList<QScreen *> list = QApplication::screens();
-			QRect rect;
-			std::vector<QRect> bounds;
-			for (int i = 0; i < list.size(); i++) {
-				QRect r = list[i]->geometry();
-				if (i == 0) {
-					rect = r;
-				} else {
-					rect = rect.united(r);
-				}
-				bounds.push_back(r);
-			}
-			if (!bounds.empty()) {
-				QElapsedTimer t;
-				t.start();
-				QImage im;
-				{
-					im = QImage(rect.width(), rect.height(), QImage::Format_RGBA8888);
-					im.fill(Qt::transparent);
-
-					QPainter pr(&im);
-					for (int i = 0; i < (int)bounds.size(); i++) {
-						QPixmap pm = list[i]->grabWindow(0);
-						QRect r = bounds[i];
-						pr.drawPixmap(r, pm, pm.rect());
-					}
-				}
-				setImage(im, true);
-				qDebug() << QString("%1ms").arg(t.elapsed());
-			}
-		}
-		return;
-	case Qt::Key_Plus:
-		ui->widget_image_view->zoomIn();
-		return;
-	case Qt::Key_Minus:
-		ui->widget_image_view->zoomOut();
-		return;
-	}
 	QMainWindow::keyPressEvent(event);
 }
 

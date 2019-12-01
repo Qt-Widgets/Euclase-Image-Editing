@@ -29,11 +29,6 @@ public:
 	static void drawFrame(QPainter *pr, int x, int y, int w, int h, QBrush color_topleft, QBrush color_bottomright);
 	static void dump(const uint8_t *ptr, size_t len);
 	static void dump(QByteArray const *in);
-	static bool isText(QString const &mimetype);
-	static bool isImage(QString const &mimetype);
-	static bool isSVG(QString const &mimetype);
-	static bool isPSD(QString const &mimetype);
-	static QString abbrevBranchName(QString const &name);
 	static QString determinFileType(QString const &filecommand, QString const &path, bool mime, std::function<void(QString const &, QByteArray *)> const &callback);
 	static std::string makeProxyServerURL(std::string text);
 	static QString makeProxyServerURL(QString text);

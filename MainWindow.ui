@@ -781,7 +781,17 @@
           <enum>Qt::NoFocus</enum>
          </property>
          <property name="text">
-          <string>...</string>
+          <string>Scroll</string>
+         </property>
+         <property name="icon">
+          <iconset resource="resources.qrc">
+           <normaloff>:/image/hand.svg</normaloff>:/image/hand.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
          </property>
         </widget>
        </item>
@@ -805,6 +815,16 @@
          <property name="text">
           <string>...</string>
          </property>
+         <property name="icon">
+          <iconset resource="resources.qrc">
+           <normaloff>:/image/brush.svg</normaloff>:/image/brush.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
         </widget>
        </item>
        <item>
@@ -826,6 +846,16 @@
          </property>
          <property name="text">
           <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="resources.qrc">
+           <normaloff>:/image/bounds.svg</normaloff>:/image/bounds.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
          </property>
         </widget>
        </item>
@@ -929,7 +959,7 @@
      <x>0</x>
      <y>0</y>
      <width>1096</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Edit">
@@ -1103,6 +1133,8 @@
   <tabstop>spinBox_brush_size</tabstop>
   <tabstop>spinBox_brush_softness</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

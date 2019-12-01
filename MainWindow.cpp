@@ -650,6 +650,7 @@ bool MainWindow::onMouseLeftButtonPress(int x, int y)
 {
 	m->mouse_moved = false;
 	m->start_vpt = QPoint(x, y);
+	m->offset_dpt = { 0, 0 };
 
 	Tool tool = currentTool();
 	if (tool == Tool::Scroll) return false;

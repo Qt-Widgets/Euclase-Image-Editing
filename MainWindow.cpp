@@ -408,6 +408,8 @@ QImage MainWindow::selectedImage() const
 	QRect r = selectionRect();
 	if (r.isEmpty() && isRectValid()) {
 		r = boundsRect();
+	} else if (r.isEmpty()) {
+		r = { 0, 0, document()->width(), document()->height() };
 	}
 	return document()->crop(r, synchronizer(), nullptr);
 }

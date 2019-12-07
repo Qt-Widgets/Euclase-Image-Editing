@@ -737,6 +737,11 @@ bool MainWindow::onMouseLeftButtonPress(int x, int y)
 	return false;
 }
 
+void MainWindow::setCursor2(QCursor const &cursor)
+{
+	ui->widget_image_view->setCursor2(cursor);
+}
+
 bool MainWindow::onMouseMove(int x, int y, bool leftbutton)
 {
 	Tool tool = currentTool();
@@ -752,7 +757,15 @@ bool MainWindow::onMouseMove(int x, int y, bool leftbutton)
 
 	if (tool == Tool::Rect) {
 		if (leftbutton) {
-			if (m->rect_handle != RectHandle::None) {
+			m->mouse_moved = true;
+		} else {
+			m->rect_handle = rectHitTest(QPoint(x, y));
+		}
+		if (m->rect_handle == RectHandle::None) {
+			setCursor2(Qt::ArrowCursor);
+		} else {
+			setCursor2(Qt::SizeAllCursor);
+			if (leftbutton) {
 				QPointF pt = mapFromViewportToDocument(mapFromDocumentToViewport(m->anchor_dpt) + QPointF(x, y) - m->start_vpt);
 				if (m->rect_handle == RectHandle::Center) {
 					m->offset_dpt = { pt.x() - m->anchor_dpt.x(), pt.y() - m->anchor_dpt.y() };
@@ -778,7 +791,6 @@ bool MainWindow::onMouseMove(int x, int y, bool leftbutton)
 				setRect();
 			}
 		}
-		m->mouse_moved = true;
 		return true;
 	}
 

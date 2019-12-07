@@ -74,6 +74,7 @@ public:
 	SelectionOutlineBitmap renderSelectionOutlineBitmap(bool *abort);
 	void stopRendering(bool wait);
 	bool isRectVisible() const;
+	void setCursor2(const QCursor &cursor);
 private slots:
 	void onRenderingCompleted(const RenderedImage &image);
 	void onSelectionOutlineRenderingCompleted(const SelectionOutlineBitmap &data);

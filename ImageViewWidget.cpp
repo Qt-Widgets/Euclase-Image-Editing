@@ -66,6 +66,7 @@ struct ImageViewWidget::Private {
 
 	SelectionOutlineBitmap selection_outline;
 
+	QCursor cursor;
 };
 
 ImageViewWidget::ImageViewWidget(QWidget *parent)
@@ -79,6 +80,9 @@ ImageViewWidget::ImageViewWidget(QWidget *parent)
 
 	m->outline_renderer = new SelectionOutlineRenderer(this);
 	connect(m->outline_renderer, &SelectionOutlineRenderer::done, this, &ImageViewWidget::onSelectionOutlineRenderingCompleted);
+
+
+	setMouseTracking(true);
 
 	startTimer(100);
 }
@@ -618,17 +622,32 @@ void ImageViewWidget::mouseMoveEvent(QMouseEvent *)
 	if (m->mouse_pos == pos) return;
 	m->mouse_pos = pos;
 
-	if (m->left_button && hasFocus()) {
-		if (!mainwindow()->onMouseMove(pos.x(), pos.y(), true)) {
-			clearSelectionOutline();
-			int delta_x = pos.x() - m->mouse_press_pos.x();
-			int delta_y = pos.y() - m->mouse_press_pos.y();
-			scrollImage(m->scroll_origin_x - delta_x, m->scroll_origin_y - delta_y, true);
+	setCursor2(Qt::ArrowCursor);
+
+	if (hasFocus()) {
+		if (mainwindow()->onMouseMove(pos.x(), pos.y(), m->left_button)) {
+			//
+		} else {
+			setCursor2(Qt::OpenHandCursor);
+			if (m->left_button) {
+				clearSelectionOutline();
+				int delta_x = pos.x() - m->mouse_press_pos.x();
+				int delta_y = pos.y() - m->mouse_press_pos.y();
+				scrollImage(m->scroll_origin_x - delta_x, m->scroll_origin_y - delta_y, m->left_button);
+			}
 		}
 	}
 
 	m->cursor_anchor_pos = mapFromViewportToDocument(pos);
 	m->wheel_delta = 0;
+
+	setCursor(m->cursor);
+}
+
+void ImageViewWidget::setCursor2(QCursor const &cursor)
+{
+	m->cursor = cursor;
+
 }
 
 void ImageViewWidget::mouseReleaseEvent(QMouseEvent *)

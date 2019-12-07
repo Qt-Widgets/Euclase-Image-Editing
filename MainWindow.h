@@ -144,6 +144,7 @@ private slots:
 
 public:
 	bool eventFilter(QObject *watched, QEvent *event);
+	void setCursor2(const QCursor &cursor);
 };
 
 #endif // MAINWINDOW_H

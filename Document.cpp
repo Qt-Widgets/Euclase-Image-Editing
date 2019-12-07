@@ -436,6 +436,13 @@ QImage Document::crop(const QRect &r, QMutex *sync, bool *abort) const
 	return panel.image_;
 }
 
+void Document::crop2(const QRect &r)
+{
+	current_layer()->setOffset(current_layer()->offset() - r.topLeft());
+	selection_layer()->setOffset(selection_layer()->offset() - r.topLeft());
+	setSize(r.size());
+}
+
 QRect Document::Layer::rect() const
 {
 	QRect rect;

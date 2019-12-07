@@ -252,6 +252,11 @@ public:
 			return offset_;
 		}
 
+		void setOffset(QPoint const &o)
+		{
+			offset_ = o;
+		}
+
 		void eachPanel(std::function<void(Image *)> const &fn)
 		{
 			for (PanelPtr &ptr : panels_) {
@@ -314,6 +319,7 @@ public:
 	QImage renderSelection(const QRect &r, QMutex *sync, bool *abort) const;
 	void changeSelection(SelectionOperation op, QRect const &rect, QMutex *sync);
 	QImage crop(const QRect &r, QMutex *sync, bool *abort) const;
+	void crop2(const QRect &r);
 	void clear(QMutex *sync);
 };
 

@@ -215,6 +215,20 @@ QRect MainWindow::boundsRect() const
 	return QRect(x, y, w, h);
 }
 
+void MainWindow::resetView(bool fitview)
+{
+	ui->widget_image_view->update();
+
+	if (fitview) {
+		fitView();
+	} else {
+		updateImageView();
+	}
+	onSelectionChanged();
+
+	hideRect();
+}
+
 void MainWindow::setImage(const QImage &image, bool fitview)
 {
 	clearDocument();
@@ -232,16 +246,7 @@ void MainWindow::setImage(const QImage &image, bool fitview)
 	opt.mode = Document::RenderOption::DirectCopy;
 	document()->renderToLayer(document()->current_layer(), layer, nullptr, opt, ui->widget_image_view->synchronizer(), nullptr);
 
-	ui->widget_image_view->update();
-
-	if (fitview) {
-		fitView();
-	} else {
-		updateImageView();
-	}
-	onSelectionChanged();
-
-	hideRect();
+	resetView(fitview);
 }
 
 void MainWindow::setImage(QByteArray const &ba, bool fitview)
@@ -406,18 +411,32 @@ void MainWindow::on_verticalScrollBar_valueChanged(int value)
 QImage MainWindow::selectedImage() const
 {
 	QRect r = selectionRect();
-	if (r.isEmpty() && isRectValid()) {
-		r = boundsRect();
-	} else if (r.isEmpty()) {
-		r = { 0, 0, document()->width(), document()->height() };
+	if (r.isEmpty()) {
+		if (isRectValid()) {
+			r = boundsRect();
+		}
+		if (r.isEmpty()) {
+			r = { 0, 0, document()->width(), document()->height() };
+		}
 	}
 	return document()->crop(r, synchronizer(), nullptr);
 }
 
 void MainWindow::on_action_trim_triggered()
 {
+#if 0
 	QImage image = selectedImage();
 	setImage(image, true);
+#else
+	if (isRectValid()) {
+		QRect r = boundsRect();
+		if (!r.isEmpty()) {
+			r = boundsRect();
+			document()->crop2(r);
+			resetView(true);
+		}
+	}
+#endif
 }
 
 void MainWindow::updateImageView()
@@ -766,6 +785,11 @@ bool MainWindow::onMouseMove(int x, int y, bool leftbutton)
 	return false;
 }
 
+void MainWindow::on_action_clear_bounds_triggered()
+{
+	hideRect();
+}
+
 bool MainWindow::onMouseLeftButtonRelase(int x, int y, bool leftbutton)
 {
 	bool mouse_moved = m->mouse_moved;
@@ -1025,7 +1049,7 @@ SelectionOutlineBitmap MainWindow::renderSelectionOutlineBitmap(bool *abort)
 }
 
 void MainWindow::on_action_edit_copy_triggered()
-{
+{	
 	QImage image = selectedImage();
 	QApplication::clipboard()->setImage(image);
 }
@@ -1064,4 +1088,5 @@ void MainWindow::on_action_select_rectangle_triggered()
 void MainWindow::test()
 {
 }
+
 

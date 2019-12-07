@@ -69,6 +69,7 @@ private:
 	void hideRect();
 	bool isRectValid() const;
 	QRect boundsRect() const;
+	void resetView(bool fitview);
 protected:
 	void keyPressEvent(QKeyEvent *event);
 public:
@@ -139,6 +140,8 @@ private slots:
 	void on_action_select_rectangle_triggered();
 
 	// QObject interface
+	void on_action_clear_bounds_triggered();
+
 public:
 	bool eventFilter(QObject *watched, QEvent *event);
 };

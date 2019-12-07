@@ -993,6 +993,7 @@
       <string>&amp;Bounds</string>
      </property>
      <addaction name="action_select_rectangle"/>
+     <addaction name="action_clear_bounds"/>
     </widget>
     <addaction name="action_resize"/>
     <addaction name="action_trim"/>
@@ -1097,6 +1098,14 @@
   <action name="action_select_rectangle">
    <property name="text">
     <string>Select rectangle</string>
+   </property>
+  </action>
+  <action name="action_clear_bounds">
+   <property name="text">
+    <string>Clear bounds</string>
+   </property>
+   <property name="toolTip">
+    <string>Clear bounds</string>
    </property>
   </action>
  </widget>

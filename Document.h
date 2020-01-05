@@ -64,14 +64,14 @@ public:
 			return image_.format() == QImage::Format_Grayscale8;
 		}
 	};
-	struct Block {
-		Header header_;
+//	struct Block {
+//		Header header_;
 
-		QPoint offset() const
-		{
-			return header_.offset();
-		}
-	};
+//		QPoint offset() const
+//		{
+//			return header_.offset();
+//		}
+//	};
 
 	class PanelPtr {
 	private:
@@ -112,9 +112,9 @@ public:
 					case Type::Image:
 						reinterpret_cast<Image *>(object_)->~Image();
 						break;
-					case Type::Block:
-						reinterpret_cast<Block *>(object_)->~Block();
-						break;
+//					case Type::Block:
+//						reinterpret_cast<Block *>(object_)->~Block();
+//						break;
 					}
 					free(reinterpret_cast<void *>(object_));
 				}
@@ -153,20 +153,20 @@ public:
 			return image();
 		}
 
-		Block *block()
-		{
-			if (object_ && reinterpret_cast<Header *>(object_)->type_ == Type::Block) {
-				return reinterpret_cast<Block *>(object_);
-			}
-			return nullptr;
-		}
-		Block const *block() const
-		{
-			if (object_ && reinterpret_cast<Header *>(object_)->type_ == Type::Block) {
-				return reinterpret_cast<Block *>(object_);
-			}
-			return nullptr;
-		}
+//		Block *block()
+//		{
+//			if (object_ && reinterpret_cast<Header *>(object_)->type_ == Type::Block) {
+//				return reinterpret_cast<Block *>(object_);
+//			}
+//			return nullptr;
+//		}
+//		Block const *block() const
+//		{
+//			if (object_ && reinterpret_cast<Header *>(object_)->type_ == Type::Block) {
+//				return reinterpret_cast<Block *>(object_);
+//			}
+//			return nullptr;
+//		}
 //		Block *operator -> ()
 //		{
 //			return block();
@@ -175,35 +175,47 @@ public:
 //		{
 //			return block();
 //		}
-		operator Block *()
-		{
-			return block();
-		}
-		operator const Block *() const
-		{
-			return block();
-		}
+//		operator Block *()
+//		{
+//			return block();
+//		}
+//		operator const Block *() const
+//		{
+//			return block();
+//		}
 
 		bool isImage() const
 		{
 			return image();
 		}
-		bool isBlock() const
-		{
-			return block();
-		}
+//		bool isBlock() const
+//		{
+//			return block();
+//		}
 		static PanelPtr makeImage()
 		{
 			void *o = malloc(sizeof(Image));
 			if (!o) throw std::bad_alloc();
 			new(o) Image();
-			PanelPtr p;
-			p.assign(reinterpret_cast<Header *>(o));
-			return p;
+			PanelPtr ptr;
+			ptr.assign(reinterpret_cast<Header *>(o));
+			return ptr;
 		}
 		operator bool ()
 		{
 			return object_;
+		}
+		PanelPtr copy() const
+		{
+			if (!object_) return {};
+			void *o = malloc(sizeof(Image));
+			if (!o) throw std::bad_alloc();
+			new(o) Image(*reinterpret_cast<Image const *>(object_));
+			Image *p = reinterpret_cast<Image *>(o);
+			p->header_.ref_ = 0;
+			PanelPtr ptr;
+			ptr.assign(&p->header_);
+			return ptr;
 		}
 	};
 

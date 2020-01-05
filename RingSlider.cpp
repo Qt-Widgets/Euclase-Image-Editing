@@ -69,9 +69,57 @@ void RingSlider::paintEvent(QPaintEvent *)
 	slider_image_cache_ = generateSliderImage();
 
 	QPainter pr(this);
-	pr.fillRect(slider_rect_.adjusted(-1, -1, 1, 1), Qt::black);
-	pr.drawImage(slider_rect_, slider_image_cache_, slider_image_cache_.rect());
 	pr.setRenderHint(QPainter::Antialiasing);
+
+	{ // left rounded cap
+		int h = slider_rect_.height();
+		QRect r(slider_rect_.x() - h / 2 - 1, slider_rect_.y(), h, h);
+		QRectF fr(r);
+
+		QPainterPath path;
+		path.addEllipse(fr);
+		pr.save();
+		pr.setClipPath(path);
+		pr.fillRect(fr, Qt::black);
+		fr.adjust(1, 1, -1, -1);
+
+		QPainterPath path2;
+		path2.addEllipse(fr);
+		pr.setClipPath(path2);
+		pr.drawImage(fr, slider_image_cache_, QRect(0, 0, 1, slider_image_cache_.height()));
+		pr.restore();
+	}
+	{ // right rounded cap
+		int h = slider_rect_.height();
+		QRect r(slider_rect_.x() + slider_rect_.width() - h / 2, slider_rect_.y(), h, h);
+		QRectF fr(r);
+
+		QPainterPath path;
+		path.addEllipse(fr);
+		pr.save();
+		pr.setClipPath(path);
+		pr.fillRect(fr, Qt::black);
+		fr.adjust(1, 1, -1, -1);
+
+		QPainterPath path2;
+		path2.addEllipse(fr);
+		pr.setClipPath(path2);
+		pr.drawImage(fr, slider_image_cache_, QRect(slider_image_cache_.width() - 1, 0, 1, slider_image_cache_.height()));
+		pr.restore();
+	}
+
+	{ // top and bottom border
+		int x = slider_rect_.x();
+		int y = slider_rect_.y();
+		int w = slider_rect_.width();
+		int h = slider_rect_.height();
+		pr.fillRect(x, y, w, 1, Qt::black);
+		pr.fillRect(x, y + h - 1, w, 1, Qt::black);
+	}
+
+	pr.drawImage(slider_rect_.adjusted(0, 1, 0, -1), slider_image_cache_, slider_image_cache_.rect());
+
+	// slider handle
 	{
 		QPainterPath path;
 		path.addRect(rect());
@@ -79,15 +127,16 @@ void RingSlider::paintEvent(QPaintEvent *)
 		path2.addEllipse(handle_rect_.adjusted(4, 4, -4, -4));
 		path = path.subtracted(path2);
 		pr.setClipPath(path);
+
+		pr.setPen(Qt::NoPen);
+		pr.setBrush(Qt::black);
+		pr.drawEllipse(handle_rect_);
+		pr.setBrush(Qt::white);
+		pr.drawEllipse(handle_rect_.adjusted(1, 1, -1, -1));
+		pr.setPen(Qt::NoPen);
+		pr.setBrush(Qt::black);
+		pr.drawEllipse(handle_rect_.adjusted(3, 3, -3, -3));
 	}
-	pr.setPen(Qt::NoPen);
-	pr.setBrush(Qt::black);
-	pr.drawEllipse(handle_rect_);
-	pr.setBrush(Qt::white);
-	pr.drawEllipse(handle_rect_.adjusted(1, 1, -1, -1));
-	pr.setPen(Qt::NoPen);
-	pr.setBrush(Qt::black);
-	pr.drawEllipse(handle_rect_.adjusted(3, 3, -3, -3));
 }
 
 void RingSlider::mousePressEvent(QMouseEvent *e)

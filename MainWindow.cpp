@@ -375,6 +375,32 @@ void MainWindow::on_action_filter_minimize_triggered()
 	setImage(image, false);
 }
 
+void MainWindow::on_action_filter_sepia_triggered()
+{
+	QImage image = renderFilterTargetImage();
+	{
+		int w = image.width();
+		int h = image.height();
+		if (w < 1 || h < 1) return;
+		for (int y = 0; y < h; y++) {
+			uint8_t *p = image.scanLine(y);
+			for (int x = 0; x < w; x++) {
+				double r = p[0];
+				double g = p[1];
+				double b = p[2];
+				r = pow(r / 255, 0.62) * 205 + 19;
+				g = pow(g / 255, 1.00) * 182 + 17;
+				b = pow(b / 255, 1.16) * 156 + 21;
+				p[0] = r;
+				p[1] = g;
+				p[2] = b;
+				p += 4;
+			}
+		}
+	}
+	setImage(image, false);
+}
+
 QImage filter_blur(QImage image, int radius);
 
 void MainWindow::on_action_filter_blur_triggered()
@@ -1100,5 +1126,6 @@ void MainWindow::on_action_select_rectangle_triggered()
 void MainWindow::test()
 {
 }
+
 
 

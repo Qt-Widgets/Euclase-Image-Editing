@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1096</width>
-    <height>738</height>
+    <height>769</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -981,7 +981,7 @@
      <x>0</x>
      <y>0</y>
      <width>1096</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Edit">
@@ -1017,6 +1017,7 @@
     <addaction name="action_filter_minimize"/>
     <addaction name="action_filter_blur"/>
     <addaction name="action_filter_antialias"/>
+    <addaction name="action_filter_sepia"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
@@ -1106,6 +1107,11 @@
    </property>
    <property name="toolTip">
     <string>Clear bounds</string>
+   </property>
+  </action>
+  <action name="action_filter_sepia">
+   <property name="text">
+    <string>Sepia</string>
    </property>
   </action>
  </widget>

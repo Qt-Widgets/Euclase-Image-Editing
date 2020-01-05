@@ -112,6 +112,7 @@ private slots:
 	void on_action_filter_maximize_triggered();
 	void on_action_filter_median_triggered();
 	void on_action_filter_minimize_triggered();
+	void on_action_filter_sepia_triggered();
 	void on_action_resize_triggered();
 	void on_action_trim_triggered();
 	void on_horizontalScrollBar_valueChanged(int value);
@@ -141,6 +142,7 @@ private slots:
 
 	// QObject interface
 	void on_action_clear_bounds_triggered();
+
 
 public:
 	bool eventFilter(QObject *watched, QEvent *event);

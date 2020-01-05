@@ -8,6 +8,7 @@
 struct Document::Private {
 	QSize size;
 	Document::Layer current_layer;
+	Document::Layer filtering_layer;
 	Document::Layer selection_layer;
 };
 
